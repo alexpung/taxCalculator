@@ -13,7 +13,7 @@ class ExcelFormatter(object):
         :param date_format: Date in excel notation e.g. 'DD/MM/YY'
         """
         if ':' in cell_range:
-            for row in ws['F:I']:
+            for row in ws[cell_range]:
                 for cell in row:
                     cell.number_format = date_format
         else:
