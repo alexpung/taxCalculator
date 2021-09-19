@@ -13,3 +13,13 @@ def format_dividend_data(ws: Worksheet) -> None:
     ExcelFormatter.format_cell(ws, 'F:I', '#,##0.00')
     ExcelFormatter.auto_size_column(ws)
     ExcelFormatter.set_alignment(ws, 'A:D', 'center')
+
+
+def format_dividend_summary(ws: Worksheet) -> None:
+    """
+    excel formatting for dividend summary sheet
+    """
+    ExcelFormatter.auto_size_column(ws)
+    ExcelFormatter.format_cell(ws, 'B:C', '#,##0.00')
+
+
