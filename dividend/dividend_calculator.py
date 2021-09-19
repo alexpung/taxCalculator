@@ -17,8 +17,9 @@ def calculate_dividend(year):
     # multiply by -1 to change negative tax value to positive
     df_dividends['Withholding tax'] = df_dividends[df_dividends['type'] == 'Withholding Tax']['amount'] * -1
     df_dividends['Withholding tax in Sterling'] = df_dividends['Withholding tax'] * df_dividends['fxRateToBase']
-    df_grouped = df_dividends.groupby(['settleDate', 'symbol', 'listingExchange', 'currency', 'fxRateToBase']).sum()
-    df_grouped = df_grouped.reset_index().sort_values('settleDate').drop(columns='amount')
+    df_grouped = df_dividends.groupby(['settleDate', 'symbol', 'listingExchange', 'currency', 'fxRateToBase'],
+                                      as_index=False).sum()
+    df_grouped = df_grouped.sort_values('settleDate').drop(columns='amount')
     _write_dividend_data(df_grouped)
 
 
