@@ -13,7 +13,8 @@ def calculate_dividend(year):
     # Setting up dividend table
     df_dividends = pandas.read_xml('data.xml', './/CashTransaction')
     df_dividends['settleDate'] = pd.to_datetime(df_dividends['settleDate'])
-    df_dividends['Gross dividend'] = df_dividends[df_dividends['type'] != 'Withholding Tax']['amount']
+    df_dividends['Gross dividend'] = df_dividends[df_dividends['type'].isin(
+        ["Dividends", "Payment In Lieu Of Dividends"])]['amount']
     df_dividends['Gross dividend in Sterling'] = df_dividends['Gross dividend'] * df_dividends['fxRateToBase']
     # multiply by -1 to change negative tax value to positive
     df_dividends['Withholding tax'] = df_dividends[df_dividends['type'] == 'Withholding Tax']['amount'] * -1
