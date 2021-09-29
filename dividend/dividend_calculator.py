@@ -1,6 +1,4 @@
 import pandas
-import pandas as pd
-
 from .dividend_data_format import format_dividend_data, format_dividend_summary
 
 
@@ -12,7 +10,7 @@ def calculate_dividend(year):
     """
     # Setting up dividend table
     df_dividends = pandas.read_xml('data.xml', './/CashTransaction')
-    df_dividends['settleDate'] = pd.to_datetime(df_dividends['settleDate'])
+    df_dividends['settleDate'] = pandas.to_datetime(df_dividends['settleDate'])
     df_dividends['Gross dividend'] = df_dividends[df_dividends['type'].isin(
         ["Dividends", "Payment In Lieu Of Dividends"])]['amount']
     df_dividends['Gross dividend in Sterling'] = df_dividends['Gross dividend'] * df_dividends['fxRateToBase']
