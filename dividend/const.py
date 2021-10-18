@@ -14,6 +14,8 @@ FX_RATE_TO_BASE = 'fxRateToBase'
 GROSS_DIVIDEND = 'Gross dividend'
 AMOUNT = 'amount'
 SETTLE_DATE = 'settleDate'
+ISIN = 'isin'
+DESCRIPTION = 'description'
 
 # interactive brokers cash transaction type
 IN_LIEU_OF_DIVIDENDS = "Payment In Lieu Of Dividends"
@@ -23,3 +25,4 @@ DIVIDENDS = "Dividends"
 # output names
 TAX_IN_STERLING = 'Withholding Tax in Sterling'
 DIVIDEND_IN_STERLING = 'Gross Dividend in Sterling'
+COUNTRY = 'country'
