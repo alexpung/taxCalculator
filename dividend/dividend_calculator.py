@@ -1,7 +1,7 @@
 import pandas
-import os
-import glob
 from .dividend_data_format import format_dividend_data, format_dividend_summary
+from xml_import.xml_to_panda import read_all_xml
+from .const import *
 
 
 def calculate_dividend(from_date, to_date):
@@ -12,32 +12,25 @@ def calculate_dividend(from_date, to_date):
     """
 
     # read all xml file in the directory
-    df_dividends = None
-    for file in glob.glob("*.xml"):
-        xml_data = pandas.read_xml(file, './/CashTransaction')
-        if df_dividends is None:
-            df_dividends = xml_data
-        else:
-            df_dividends = pandas.concat([df_dividends, xml_data], ignore_index=True)
-
+    df_dividends = read_all_xml('.//CashTransaction')
     # Setting up dividend table
-    df_dividends['settleDate'] = pandas.to_datetime(df_dividends['settleDate'])
-    df_dividends = df_dividends[(df_dividends['settleDate'] > from_date) &
-                                (df_dividends['settleDate'] < to_date)]
-    df_dividends['Gross dividend'] = df_dividends[df_dividends['type'].isin(
-        ["Dividends", "Payment In Lieu Of Dividends"])]['amount']
-    df_dividends['Gross dividend in Sterling'] = df_dividends['Gross dividend'] * df_dividends['fxRateToBase']
+    df_dividends[SETTLE_DATE] = pandas.to_datetime(df_dividends[SETTLE_DATE])
+    df_dividends = df_dividends[(df_dividends[SETTLE_DATE] > from_date) &
+                                (df_dividends[SETTLE_DATE] < to_date)]
+    df_dividends[GROSS_DIVIDEND] = df_dividends[df_dividends[TYPE].isin(
+        [DIVIDENDS, IN_LIEU_OF_DIVIDENDS])][AMOUNT]
+    df_dividends[DIVIDEND_IN_STERLING] = df_dividends[GROSS_DIVIDEND] * df_dividends[FX_RATE_TO_BASE]
     # multiply by -1 to change negative tax value to positive
-    df_dividends['Withholding tax'] = df_dividends[df_dividends['type'] == 'Withholding Tax']['amount'] * -1
-    df_dividends['Withholding tax in Sterling'] = df_dividends['Withholding tax'] * df_dividends['fxRateToBase']
-    df_grouped = df_dividends.groupby(['settleDate', 'symbol', 'listingExchange', 'currency', 'fxRateToBase'],
+    df_dividends[WITHHOLDING_TAX] = df_dividends[df_dividends[TYPE] == WITHHOLDING_TAX][AMOUNT] * -1
+    df_dividends[TAX_IN_STERLING] = df_dividends[WITHHOLDING_TAX] * df_dividends[FX_RATE_TO_BASE]
+    df_grouped = df_dividends.groupby([SETTLE_DATE, SYMBOL, LISTING_EXCHANGE, CURRENCY, FX_RATE_TO_BASE],
                                       as_index=False).sum()
-    df_grouped = df_grouped.sort_values('settleDate').drop(columns='amount')
+    df_grouped = df_grouped.sort_values(SETTLE_DATE).drop(columns=AMOUNT)
 
     # group dividend by currency type (should be ok with most companies except rare cases)
     # TODO how to solve companies paying dividend in currency different from its location,
-    #  listing exchange is also not accurate
-    df_summary = df_grouped.groupby('currency').sum()[['Gross dividend in Sterling', 'Withholding tax in Sterling']]
+    #  listing exchange is also not accurate - solution ISO3166 from ISIN
+    df_summary = df_grouped.groupby(CURRENCY).sum()[[DIVIDEND_IN_STERLING, TAX_IN_STERLING]]
     _write_dividend_data(df_grouped, df_summary)
 
 
@@ -45,8 +38,8 @@ def _write_dividend_data(df_dividend_data: pandas.DataFrame,
                          df_dividend_summary: pandas.DataFrame,
                          filename="output.xlsx"):
     # Write to excel sheet from dataframe
-    dividend_data_sheet_name = "dividend data"
-    dividend_summary_sheet_name = "dividend summary"
+    dividend_data_sheet_name = DIVIDEND_DATA
+    dividend_summary_sheet_name = DIVIDEND_SUMMARY
 
     with pandas.ExcelWriter(filename, engine='openpyxl') as xlsx:
         df_dividend_data.to_excel(xlsx, dividend_data_sheet_name, index=False)
