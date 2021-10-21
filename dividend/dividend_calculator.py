@@ -7,7 +7,10 @@ from iso3166 import countries
 
 def calculate_dividend(from_date, to_date):
     """
-    To set up Dataframe for dividend information from XML
+    Read all the XML files in the same directory and output to excel file as output.xlsx
+    Dividend/Dividend in lieu/Withholding tax is combined to a single line
+    There is a summary sheet listing dividend received/withholding tax paid by country of origin
+
     :param from_date: starting date of report: string of format 'YYYY-MM-DD'
     :param to_date: ending date of report: string of format 'YYYY-MM-DD'
     """
