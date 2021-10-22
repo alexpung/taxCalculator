@@ -23,3 +23,15 @@ def format_dividend_summary(ws: Worksheet) -> None:
     ExcelFormatter.auto_size_column(ws)
     ExcelFormatter.set_alignment(ws, 'A', 'center')
     ExcelFormatter.format_cell(ws, 'B:C', '#,##0.00')
+
+
+def format_interest_data(ws: Worksheet) -> None:
+    """
+    excel formatting for interest income data sheet
+    """
+    ExcelFormatter.auto_size_column(ws)
+    ExcelFormatter.format_cell(ws, 'A', 'DD/MM/YY')
+    ExcelFormatter.format_cell(ws, 'D', '#,##0.00')
+    ExcelFormatter.format_cell(ws, 'G', '#,##0.00')
+    ExcelFormatter.set_alignment(ws, 'A', 'center')
+    ExcelFormatter.set_alignment(ws, 'E', 'center')
