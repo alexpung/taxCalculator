@@ -1,8 +1,9 @@
 import pandas
-from .dividend_data_format import format_dividend_data, format_dividend_summary
+from iso3166 import countries
+
 from xml_import.xml_to_panda import read_all_xml
 from .const import *
-from iso3166 import countries
+from .dividend_data_format import format_dividend_data, format_dividend_summary
 
 
 def calculate_dividend(from_date, to_date):
@@ -20,8 +21,9 @@ def calculate_dividend(from_date, to_date):
     df_company_info.drop_duplicates(subset=ISIN, keep='last', inplace=True)
     df_company_info[COUNTRY] = df_company_info[ISIN].dropna().str[:2].apply(lambda x: countries.get(x).alpha3)
     df_dividends = df_dividends.merge(df_company_info[[ISIN, COUNTRY]], on=ISIN)
-    # Setting up dividend table
     df_dividends[SETTLE_DATE] = pandas.to_datetime(df_dividends[SETTLE_DATE])
+    # filter only dividend and tax entries
+    df_dividends = df_dividends[df_dividends[TYPE].isin(DIVIDEND_TYPE)]
     df_dividends = df_dividends[(df_dividends[SETTLE_DATE] > from_date) &
                                 (df_dividends[SETTLE_DATE] < to_date)]
     df_dividends[GROSS_DIVIDEND] = df_dividends[df_dividends[TYPE].isin(

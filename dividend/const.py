@@ -21,6 +21,7 @@ DESCRIPTION = 'description'
 IN_LIEU_OF_DIVIDENDS = "Payment In Lieu Of Dividends"
 WITHHOLDING_TAX = 'Withholding Tax'
 DIVIDENDS = "Dividends"
+DIVIDEND_TYPE = [IN_LIEU_OF_DIVIDENDS, WITHHOLDING_TAX, DIVIDENDS]
 
 # output names
 TAX_IN_STERLING = 'Withholding Tax in Sterling'
