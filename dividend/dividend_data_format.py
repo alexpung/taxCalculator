@@ -2,6 +2,7 @@
 Collection of excel sheet formatting for writing Pandas Dataframe to excel
 """
 from openpyxl.worksheet.worksheet import Worksheet
+
 from excel_format.format import ExcelFormatter
 
 
@@ -20,6 +21,5 @@ def format_dividend_summary(ws: Worksheet) -> None:
     excel formatting for dividend summary sheet
     """
     ExcelFormatter.auto_size_column(ws)
+    ExcelFormatter.set_alignment(ws, 'A', 'center')
     ExcelFormatter.format_cell(ws, 'B:C', '#,##0.00')
-
-
