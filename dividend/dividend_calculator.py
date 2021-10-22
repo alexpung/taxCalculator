@@ -36,6 +36,6 @@ def calculate_dividend(from_date, to_date):
     df_grouped = df_dividends.groupby([SETTLE_DATE, SYMBOL, COUNTRY, CURRENCY, FX_RATE_TO_BASE],
                                       as_index=False).sum()
     df_grouped = df_grouped.sort_values(SETTLE_DATE).drop(columns=AMOUNT)
-    df_summary = df_grouped.groupby(COUNTRY).sum()[[DIVIDEND_IN_STERLING, TAX_IN_STERLING]]
+    df_summary = df_grouped.groupby(COUNTRY).sum()[[DIVIDEND_IN_STERLING, TAX_IN_STERLING]].reset_index()
     write_dataframe(df_grouped, 'output.xlsx', DIVIDEND_DATA, format_dividend_data)
     write_dataframe(df_summary, 'output.xlsx', DIVIDEND_SUMMARY, format_dividend_summary)
