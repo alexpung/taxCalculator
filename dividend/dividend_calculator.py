@@ -1,6 +1,7 @@
 import pandas
 from iso3166 import countries
 
+from excel_format.write_dataframe import write_dataframe
 from xml_import.xml_to_panda import read_all_xml
 from .const import *
 from .dividend_data_format import format_dividend_data, format_dividend_summary
@@ -36,18 +37,5 @@ def calculate_dividend(from_date, to_date):
                                       as_index=False).sum()
     df_grouped = df_grouped.sort_values(SETTLE_DATE).drop(columns=AMOUNT)
     df_summary = df_grouped.groupby(COUNTRY).sum()[[DIVIDEND_IN_STERLING, TAX_IN_STERLING]]
-    _write_dividend_data(df_grouped, df_summary)
-
-
-def _write_dividend_data(df_dividend_data: pandas.DataFrame,
-                         df_dividend_summary: pandas.DataFrame,
-                         filename="output.xlsx"):
-    # Write to excel sheet from dataframe
-    dividend_data_sheet_name = DIVIDEND_DATA
-    dividend_summary_sheet_name = DIVIDEND_SUMMARY
-
-    with pandas.ExcelWriter(filename, engine='openpyxl') as xlsx:
-        df_dividend_data.to_excel(xlsx, dividend_data_sheet_name, index=False)
-        format_dividend_data(xlsx.sheets[dividend_data_sheet_name])
-        df_dividend_summary.to_excel(xlsx, dividend_summary_sheet_name)
-        format_dividend_summary(xlsx.sheets[dividend_summary_sheet_name])
+    write_dataframe(df_grouped, 'output.xlsx', DIVIDEND_DATA, format_dividend_data)
+    write_dataframe(df_summary, 'output.xlsx', DIVIDEND_SUMMARY, format_dividend_summary)
