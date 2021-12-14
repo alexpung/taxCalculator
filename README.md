@@ -1,3 +1,6 @@
+![Pylint](https://github.com/alexpung/taxCalculator/actions/workflows/pylint.yml/badge.svg)
+
+
 # taxCalculator
 UK tax calculator for Interactive Broker
 
