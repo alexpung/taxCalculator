@@ -1,5 +1,5 @@
-from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import Alignment
+from openpyxl.worksheet.worksheet import Worksheet
 
 
 class ExcelFormatter(object):
@@ -38,7 +38,7 @@ class ExcelFormatter(object):
     @staticmethod
     def set_alignment(ws: Worksheet, cell_range: str, horizontal_alignment: str) -> None:
         """
-        set alignment of cells
+        set horizontal alignment of cells
         :param ws: Openpyxl Worksheet object
         :param cell_range: Range of cell to be formatted
         :param horizontal_alignment:
@@ -47,3 +47,6 @@ class ExcelFormatter(object):
             for row in ws[cell_range]:
                 for cell in row:
                     cell.alignment = Alignment(horizontal=horizontal_alignment)
+        else:
+            for cell in ws[cell_range]:
+                cell.alignment = Alignment(horizontal=horizontal_alignment)
