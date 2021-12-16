@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="PylintConfigService">
-    <option name="customPylintPath" value="C:\Users\Alex Pun\PycharmProjects\taxCalculator\venv\Scripts\pylint.exe" />
+    <option name="customPylintPath" value="C:\Users\Alex Pun\AppData\Local\pypoetry\Cache\virtualenvs\taxcalculator-IafXeiY0-py3.10\Scripts\pylint.exe" />
   </component>
 </project>
