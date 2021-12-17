@@ -1,18 +1,25 @@
+""" Class model to match capital gain transactions """
+from __future__ import annotations
+
+from dataclasses import dataclass, field
 import datetime
-from enum import Enum, auto
 from decimal import Decimal
-from dataclasses import dataclass
-from .exception import OverMatchError, MixedTickerError
-import logging
+from enum import Enum, auto
+
+from capital_gain.exception import MixedTickerError, OverMatchError
 
 
 class TransactionType(Enum):
+    """Enum of type of transactions"""
+
     BUY = auto()
     SELL = auto()
     CORPORATE_ACTION = auto()
 
 
 class MatchType(Enum):
+    """HMRC acquisition and disposal share matching rules"""
+
     SAME_DAY = auto()
     BED_AND_BREAKFAST = auto()
     SECTION104 = auto()
@@ -20,14 +27,17 @@ class MatchType(Enum):
 
 @dataclass
 class HMRCMatchStatus:
+    """To keep track of buy and sell matching during calculation"""
+
     unmatched: Decimal
     same_day: Decimal
     bed_and_breakfast: Decimal
     section104: Decimal
 
-    def match(self, size: Decimal, match_type: MatchType):
+    def match(self, size: Decimal, match_type: MatchType) -> None:
+        """Update the transaction record when it is matched"""
         if size > self.unmatched:
-            raise OverMatchError
+            raise OverMatchError(self.unmatched, size)
         else:
             self.unmatched -= size
             if match_type == MatchType.SAME_DAY:
@@ -37,50 +47,64 @@ class HMRCMatchStatus:
             elif match_type == MatchType.SECTION104:
                 self.section104 += size
             else:
-                raise TypeError("Unknown Security Matching Type, Should be Bed&Breakfast/same day/section 104")
+                raise TypeError(
+                    "Unknown Security Matching Type, "
+                    "Should be Bed&Breakfast/same day/section 104"
+                )
 
 
 @dataclass
 class Transaction:
+    """Transaction class to store transaction"""
+
     ticker: str
     transaction_date: datetime.date
     transaction_type: TransactionType
     size: Decimal  # for fractional shares
     transaction_value: Decimal
-    match_status: HMRCMatchStatus | None = None
-    calculations_comment: str | None = None
+    match_status: HMRCMatchStatus = field(init=False)
+    calculations_comment: str = ""
 
-    def __post_init__(self):
-        self.match_status = HMRCMatchStatus(self.size, Decimal(0), Decimal(0), Decimal(0))
+    def __post_init__(self) -> None:
+        self.match_status = HMRCMatchStatus(
+            self.size, Decimal(0), Decimal(0), Decimal(0)
+        )
 
-    def __lt__(self, other):
+    def __lt__(self, other: Transaction) -> bool:
         return self.transaction_date < other.transaction_date
 
-    def __gt__(self, other):
+    def __gt__(self, other: Transaction) -> bool:
         return self.transaction_date > other.transaction_date
 
 
 @dataclass
 class Section104:
+    """Data class for storing section 104 pool of shares"""
+
     quantity: Decimal
     average_cost: Decimal
 
 
 class CgtCalculator:
-    def __init__(self, transaction_list: list[Transaction]):
+    """To calculate capital gain"""
+
+    def __init__(self, transaction_list: list[Transaction]) -> None:
         ticker = transaction_list[0].ticker
         for transaction in transaction_list:
             if transaction.ticker != ticker:
-                raise MixedTickerError(transaction.ticker,  ticker)
+                raise MixedTickerError(transaction.ticker, ticker)
         self.transaction_list = transaction_list
         self.transaction_list.sort()
 
-    def calculate_tax(self):
-        pass
+    def calculate_tax(self) -> None:
+        """To calculate chargeable gain and
+        allowable loss of a list of same kind of shares"""
         # TODO same day matching/bed and breakfast/section 104
 
     @staticmethod
-    def _match(transaction1: Transaction, transaction2: Transaction, match_type: MatchType):
+    def _match(
+        transaction1: Transaction, transaction2: Transaction, match_type: MatchType
+    ) -> None:
         if transaction1.match_status.unmatched <= transaction2.match_status.unmatched:
             to_match = transaction1.match_status.unmatched
         else:
@@ -88,20 +112,32 @@ class CgtCalculator:
         transaction1.match_status.match(to_match, match_type)
         transaction2.match_status.match(to_match, match_type)
 
-    def match_same_day_disposal(self):
+    def match_same_day_disposal(self) -> None:
+        """To match buy and sell transactions that occur in the same day"""
         for sell_transaction in self.transaction_list:
             if sell_transaction.transaction_type == TransactionType.SELL:
-                matched_transactions_list = [x for x in self.transaction_list
-                                             if x.transaction_date == sell_transaction.transaction_date
-                                             and x.transaction_type == TransactionType.BUY]
+                matched_transactions_list = [
+                    x
+                    for x in self.transaction_list
+                    if x.transaction_date == sell_transaction.transaction_date
+                    and x.transaction_type == TransactionType.BUY
+                ]
                 for buy_transaction in matched_transactions_list:
                     self._match(sell_transaction, buy_transaction, MatchType.SAME_DAY)
 
-    def match_bed_and_breakfast_disposal(self):
+    def match_bed_and_breakfast_disposal(self) -> None:
+        """To match buy transactions that occur within 30 days of a sell transaction"""
         for sell_transaction in self.transaction_list:
             if sell_transaction.transaction_type == TransactionType.SELL:
-                matched_transactions_list = [x for x in self.transaction_list
-                                             if 30 >= (x.transaction_date - sell_transaction.transaction_date).days > 0
-                                             and x.transaction_type == TransactionType.BUY]
+                matched_transactions_list = [
+                    x
+                    for x in self.transaction_list
+                    if 30
+                    >= (x.transaction_date - sell_transaction.transaction_date).days
+                    > 0
+                    and x.transaction_type == TransactionType.BUY
+                ]
                 for buy_transaction in matched_transactions_list:
-                    self._match(sell_transaction, buy_transaction, MatchType.BED_AND_BREAKFAST)
+                    self._match(
+                        sell_transaction, buy_transaction, MatchType.BED_AND_BREAKFAST
+                    )
