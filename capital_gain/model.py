@@ -27,31 +27,31 @@ class MatchType(Enum):
 
 
 @dataclass
+class HMRCMatchRecord:
+    """Record of whether part or all of the transaction belongs to same day/
+    bed and breakfast or section 104"""
+
+    transaction: Transaction
+    size: Decimal
+    type: MatchType
+
+
+@dataclass
 class HMRCMatchStatus:
     """To keep track of buy and sell matching during calculation"""
 
     unmatched: Decimal
-    same_day: Decimal
-    bed_and_breakfast: Decimal
-    section104: Decimal
+    record: list[HMRCMatchRecord] = field(default_factory=list)
 
-    def match(self, size: Decimal, match_type: MatchType) -> None:
+    def match(
+        self, size: Decimal, matched_transaction: Transaction, match_type: MatchType
+    ) -> None:
         """Update the transaction record when it is matched"""
         if size > self.unmatched:
             raise OverMatchError(self.unmatched, size)
         else:
+            self.record.append(HMRCMatchRecord(matched_transaction, size, match_type))
             self.unmatched -= size
-            if match_type == MatchType.SAME_DAY:
-                self.same_day += size
-            elif match_type == MatchType.BED_AND_BREAKFAST:
-                self.bed_and_breakfast += size
-            elif match_type == MatchType.SECTION104:
-                self.section104 += size
-            else:
-                raise TypeError(
-                    "Unknown Security Matching Type, "
-                    "Should be Bed&Breakfast/same day/section 104"
-                )
 
 
 @dataclass
@@ -72,9 +72,7 @@ class Transaction:
     transaction_id_counter: ClassVar[int] = 1
 
     def __post_init__(self) -> None:
-        self.match_status = HMRCMatchStatus(
-            self.size, Decimal(0), Decimal(0), Decimal(0)
-        )
+        self.match_status = HMRCMatchStatus(self.size)
         self.transaction_id = Transaction.transaction_id_counter
         Transaction.transaction_id_counter += 1
 
@@ -117,8 +115,8 @@ class CgtCalculator:
         to_match = min(
             transaction1.match_status.unmatched, transaction2.match_status.unmatched
         )
-        transaction1.match_status.match(to_match, match_type)
-        transaction2.match_status.match(to_match, match_type)
+        transaction1.match_status.match(to_match, transaction2, match_type)
+        transaction2.match_status.match(to_match, transaction1, match_type)
 
     def match_same_day_disposal(self) -> None:
         """To match buy and sell transactions that occur in the same day"""
