@@ -69,7 +69,7 @@ class Transaction:
     match_status: HMRCMatchStatus = field(init=False)
     calculations_comment: str = ""
     transaction_id: int = field(init=False)
-    transaction_id_counter: ClassVar = 1
+    transaction_id_counter: ClassVar[int] = 1
 
     def __post_init__(self) -> None:
         self.match_status = HMRCMatchStatus(
