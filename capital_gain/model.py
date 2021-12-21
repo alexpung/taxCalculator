@@ -113,10 +113,10 @@ class CgtCalculator:
     def _match(
         transaction1: Transaction, transaction2: Transaction, match_type: MatchType
     ) -> None:
-        if transaction1.match_status.unmatched <= transaction2.match_status.unmatched:
-            to_match = transaction1.match_status.unmatched
-        else:
-            to_match = transaction2.match_status.unmatched
+        """Calculate the size to be matched"""
+        to_match = min(
+            transaction1.match_status.unmatched, transaction2.match_status.unmatched
+        )
         transaction1.match_status.match(to_match, match_type)
         transaction2.match_status.match(to_match, match_type)
 
