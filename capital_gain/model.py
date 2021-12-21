@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 import datetime
 from decimal import Decimal
 from enum import Enum, auto
+from typing import ClassVar
 
 from capital_gain.exception import MixedTickerError, OverMatchError
 
@@ -57,6 +58,9 @@ class HMRCMatchStatus:
 class Transaction:
     """Transaction class to store transaction"""
 
+    # pylint: disable=too-many-instance-attributes
+    # It is not avoidable that a transaction have many attributes
+
     ticker: str
     transaction_date: datetime.date
     transaction_type: TransactionType
@@ -64,11 +68,15 @@ class Transaction:
     transaction_value: Decimal
     match_status: HMRCMatchStatus = field(init=False)
     calculations_comment: str = ""
+    transaction_id: int = field(init=False)
+    transaction_id_counter: ClassVar = 1
 
     def __post_init__(self) -> None:
         self.match_status = HMRCMatchStatus(
             self.size, Decimal(0), Decimal(0), Decimal(0)
         )
+        self.transaction_id = Transaction.transaction_id_counter
+        Transaction.transaction_id_counter += 1
 
     def __lt__(self, other: Transaction) -> bool:
         return self.transaction_date < other.transaction_date
