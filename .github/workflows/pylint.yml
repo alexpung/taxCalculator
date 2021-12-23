@@ -45,3 +45,9 @@ jobs:
       - name: Analysing the code with pylint
         run: |
           poetry run pylint $(find -path "./.venv" -prune -o -name "*.py" -print | xargs)
+      #----------------------------------------------
+      # run tests with coverage pytest
+      #----------------------------------------------
+      - name: Analysing the code with pylint
+        run: |
+          poetry run coverage run -m pytest
