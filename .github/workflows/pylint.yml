@@ -44,4 +44,4 @@ jobs:
       #----------------------------------------------
       - name: Analysing the code with pylint
         run: |
-          poetry run pylint $(find -path ./.venv -prune -o -name "*.py" | xargs)
+          poetry run pylint $(find . -path ./.venv -prune -o -name "*.py" | xargs)
