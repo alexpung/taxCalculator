@@ -56,3 +56,6 @@ show_none_errors = true
 warn_no_return = true
 warn_unreachable = true
 ignore_missing_imports = true
+
+[tool.coverage.html]
+skip_empty = true
