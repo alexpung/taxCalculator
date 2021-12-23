@@ -1,4 +1,4 @@
-![Pylint](https://github.com/alexpung/taxCalculator/actions/workflows/pylint.yml/badge.svg)
+![Pylint](https://github.com/alexpung/taxCalculator/actions/workflows/ci.yml/badge.svg)
 
 # taxCalculator
 
