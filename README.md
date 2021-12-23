@@ -1,4 +1,5 @@
 ![Pylint](https://github.com/alexpung/taxCalculator/actions/workflows/ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/alexpung/taxCalculator/branch/development/graph/badge.svg?token=O5UGER8FEJ)](https://codecov.io/gh/alexpung/taxCalculator)
 
 # taxCalculator
 
