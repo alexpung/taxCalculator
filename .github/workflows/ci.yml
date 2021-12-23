@@ -48,6 +48,13 @@ jobs:
       #----------------------------------------------
       # run tests with coverage pytest
       #----------------------------------------------
-      - name: Analysing the code with pylint
+      - name: Run tests
         run: |
           poetry run coverage run -m pytest
+      #----------------------------------------------
+      # upload coverage report to codecov
+      #----------------------------------------------
+      - name: "Upload coverage to Codecov"
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
