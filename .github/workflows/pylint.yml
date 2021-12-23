@@ -5,20 +5,25 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10"]
     steps:
+      #----------------------------------------------
+      #       check-out repo and set-up python
+      #----------------------------------------------
+      - name: Check out repository
       - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python $3.10
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.10
       #----------------------------------------------
       # install poetry
       #----------------------------------------------
       - name: Install Poetry
         uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
       #----------------------------------------------
       #       load cached venv if cache exists
       #----------------------------------------------
@@ -39,4 +44,4 @@ jobs:
       #----------------------------------------------
       - name: Analysing the code with pylint
         run: |
-          pylint $(find . -name "*.py" | xargs)
+          poetry run pylint $(find . -name "*.py" | xargs)
