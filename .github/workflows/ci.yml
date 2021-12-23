@@ -51,7 +51,7 @@ jobs:
       - name: Run tests and get coverage report
         run: |
           poetry run coverage run -m pytest
-          poetry run coverage html
+          poetry run coverage xml
       #----------------------------------------------
       # upload coverage report to codecov
       #----------------------------------------------
