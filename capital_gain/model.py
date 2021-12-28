@@ -5,8 +5,9 @@ from dataclasses import dataclass, field
 import datetime
 from decimal import Decimal
 from enum import Enum, auto
-from typing import ClassVar
+from typing import ClassVar, Union
 
+from capital_gain import comments
 from capital_gain.exception import MixedTickerError, OverMatchError
 
 
@@ -31,7 +32,7 @@ class HMRCMatchRecord:
     """Record of whether part or all of the transaction belongs to same day/
     bed and breakfast or section 104"""
 
-    transaction: Transaction
+    transaction: Transaction | None
     size: Decimal
     type: MatchType
 
@@ -44,7 +45,10 @@ class HMRCMatchStatus:
     record: list[HMRCMatchRecord] = field(default_factory=list)
 
     def match(
-        self, size: Decimal, matched_transaction: Transaction, match_type: MatchType
+        self,
+        size: Decimal,
+        matched_transaction: Union[Transaction, None],
+        match_type: MatchType,
     ) -> None:
         """Update the transaction record when it is matched"""
         if size > self.unmatched:
@@ -56,7 +60,13 @@ class HMRCMatchStatus:
 
 @dataclass
 class Transaction:
-    """Transaction class to store transaction"""
+    """Transaction class to store transaction
+    Ticker: A string represent the symbol of the security
+    transaction_date: Datetime object representing the date of transaction
+    Transaction_type: Buy/Sell/Dividend/Corporate action as defined in enum
+    size: Number of shares
+    Transaction value: Net value of transactions AFTER allowable dealing cost
+    """
 
     # pylint: disable=too-many-instance-attributes
     # It is not avoidable that a transaction have many attributes
@@ -67,7 +77,7 @@ class Transaction:
     size: Decimal  # for fractional shares
     transaction_value: Decimal
     match_status: HMRCMatchStatus = field(init=False)
-    calculations_comment: str = ""
+    calculations_comment: list[object] = field(default_factory=list)
     transaction_id: int = field(init=False)
     transaction_id_counter: ClassVar[int] = 1
 
@@ -82,13 +92,17 @@ class Transaction:
     def __gt__(self, other: Transaction) -> bool:
         return self.transaction_date > other.transaction_date
 
+    def get_partial_value(self, qty: Decimal) -> Decimal:
+        """return the value for partial share matching for this transaction"""
+        return qty * self.transaction_value / self.size
+
 
 @dataclass
 class Section104:
     """Data class for storing section 104 pool of shares"""
 
     quantity: Decimal
-    average_cost: Decimal
+    cost: Decimal
 
 
 class CgtCalculator:
@@ -118,6 +132,10 @@ class CgtCalculator:
         )
         transaction1.match_status.match(to_match, transaction2, match_type)
         transaction2.match_status.match(to_match, transaction1, match_type)
+
+    def _change_section104(self, qty: Decimal, cost: Decimal) -> None:
+        self.section104.quantity += qty
+        self.section104.cost += cost
 
     def match_same_day_disposal(self) -> None:
         """To match buy and sell transactions that occur in the same day"""
@@ -153,4 +171,51 @@ class CgtCalculator:
             for buy_transaction in matched_transactions_list:
                 self._match(
                     sell_transaction, buy_transaction, MatchType.BED_AND_BREAKFAST
+                )
+
+    def match_section104(self) -> None:
+        """To handle section 104 share matching"""
+        for transaction in self.transaction_list:
+            if (
+                transaction.transaction_type == TransactionType.BUY
+                and transaction.match_status.unmatched > 0
+            ):
+                transaction.match_status.match(
+                    transaction.match_status.unmatched,
+                    None,
+                    MatchType.BED_AND_BREAKFAST,
+                )
+                transaction.calculations_comment.append(
+                    comments.AddToSection104(
+                        self.section104.quantity,
+                        self.section104.cost,
+                        transaction.size,
+                        transaction.get_partial_value(self.section104.quantity),
+                    )
+                )
+                self._change_section104(
+                    transaction.match_status.unmatched,
+                    transaction.get_partial_value(self.section104.quantity),
+                )
+            elif (
+                transaction.transaction_type == TransactionType.SELL
+                and transaction.match_status.unmatched > 0
+            ):
+                matchable_shares = min(
+                    transaction.match_status.unmatched, self.section104.quantity
+                )
+                transaction.match_status.match(
+                    matchable_shares, None, MatchType.BED_AND_BREAKFAST
+                )
+                transaction.calculations_comment.append(
+                    comments.RemoveFromSection104(
+                        self.section104.quantity,
+                        self.section104.cost,
+                        matchable_shares,
+                        transaction.get_partial_value(matchable_shares),
+                    )
+                )
+                self._change_section104(
+                    matchable_shares * -1,
+                    transaction.get_partial_value(matchable_shares) * -1,
                 )
