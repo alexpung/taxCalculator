@@ -7,7 +7,7 @@ from decimal import Decimal
 from enum import Enum, auto
 from typing import ClassVar, Union
 
-from capital_gain import comments
+from capital_gain.comments import Comment
 from capital_gain.exception import MixedTickerError, OverMatchError
 
 
@@ -104,6 +104,21 @@ class Section104:
     quantity: Decimal
     cost: Decimal
 
+    def add_to_section104(self, qty: Decimal, cost: Decimal) -> str:
+        """Handle adding shares to section 104 pool and return a comment string"""
+        self.quantity += qty
+        self.cost += cost
+        return Comment.add_to_section104(qty, cost, self.quantity, self.cost)
+
+    def remove_from_section104(self, qty: Decimal) -> str:
+        """Handle removing shares to section 104 pool and return a comment string"""
+        allowable_cost = self.cost * qty / self.quantity
+        self.cost -= allowable_cost
+        self.quantity -= qty
+        return Comment.remove_from_section104(
+            qty, allowable_cost, self.quantity, self.cost
+        )
+
 
 class CgtCalculator:
     """To calculate capital gain"""
@@ -134,10 +149,6 @@ class CgtCalculator:
         )
         transaction1.match_status.match(to_match, transaction2, match_type)
         transaction2.match_status.match(to_match, transaction1, match_type)
-
-    def _change_section104(self, qty: Decimal, cost: Decimal) -> None:
-        self.section104.quantity += qty
-        self.section104.cost += cost
 
     def match_same_day_disposal(self) -> None:
         """To match buy and sell transactions that occur in the same day"""
@@ -188,18 +199,10 @@ class CgtCalculator:
                     None,
                     MatchType.BED_AND_BREAKFAST,
                 )
-                transaction.calculations_comment.append(
-                    comments.AddToSection104(
-                        self.section104.quantity,
-                        self.section104.cost,
-                        share_to_be_added,
-                        transaction.get_partial_value(share_to_be_added),
-                    )
+                comment = self.section104.add_to_section104(
+                    share_to_be_added, transaction.get_partial_value(share_to_be_added)
                 )
-                self._change_section104(
-                    share_to_be_added,
-                    transaction.get_partial_value(share_to_be_added),
-                )
+                transaction.calculations_comment.append(comment)
             elif (
                 transaction.transaction_type == TransactionType.SELL
                 and transaction.match_status.unmatched > 0
@@ -210,15 +213,6 @@ class CgtCalculator:
                 transaction.match_status.match(
                     matchable_shares, None, MatchType.BED_AND_BREAKFAST
                 )
-                transaction.calculations_comment.append(
-                    comments.RemoveFromSection104(
-                        self.section104.quantity,
-                        self.section104.cost,
-                        matchable_shares,
-                        transaction.get_partial_value(matchable_shares),
-                    )
-                )
-                self._change_section104(
-                    matchable_shares * -1,
-                    transaction.get_partial_value(matchable_shares) * -1,
-                )
+
+                comment = self.section104.remove_from_section104(matchable_shares)
+                transaction.calculations_comment.append(comment)
