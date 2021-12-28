@@ -101,6 +101,7 @@ class CgtCalculator:
                 raise MixedTickerError(transaction.ticker, ticker)
         self.transaction_list = transaction_list
         self.transaction_list.sort()
+        self.section104 = Section104(Decimal(0), Decimal(0))
 
     def calculate_tax(self) -> None:
         """To calculate chargeable gain and
