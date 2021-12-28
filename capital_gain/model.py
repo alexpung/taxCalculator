@@ -121,30 +121,36 @@ class CgtCalculator:
 
     def match_same_day_disposal(self) -> None:
         """To match buy and sell transactions that occur in the same day"""
-        for sell_transaction in self.transaction_list:
-            if sell_transaction.transaction_type == TransactionType.SELL:
-                matched_transactions_list = [
-                    x
-                    for x in self.transaction_list
-                    if x.transaction_date == sell_transaction.transaction_date
-                    and x.transaction_type == TransactionType.BUY
-                ]
-                for buy_transaction in matched_transactions_list:
-                    self._match(sell_transaction, buy_transaction, MatchType.SAME_DAY)
+        for sell_transaction in [
+            x
+            for x in self.transaction_list
+            if x.transaction_type == TransactionType.SELL
+        ]:
+            matched_transactions_list = [
+                x
+                for x in self.transaction_list
+                if x.transaction_date == sell_transaction.transaction_date
+                and x.transaction_type == TransactionType.BUY
+            ]
+            for buy_transaction in matched_transactions_list:
+                self._match(sell_transaction, buy_transaction, MatchType.SAME_DAY)
 
     def match_bed_and_breakfast_disposal(self) -> None:
         """To match buy transactions that occur within 30 days of a sell transaction"""
-        for sell_transaction in self.transaction_list:
-            if sell_transaction.transaction_type == TransactionType.SELL:
-                matched_transactions_list = [
-                    x
-                    for x in self.transaction_list
-                    if 30
-                    >= (x.transaction_date - sell_transaction.transaction_date).days
-                    > 0
-                    and x.transaction_type == TransactionType.BUY
-                ]
-                for buy_transaction in matched_transactions_list:
-                    self._match(
-                        sell_transaction, buy_transaction, MatchType.BED_AND_BREAKFAST
-                    )
+        for sell_transaction in [
+            x
+            for x in self.transaction_list
+            if x.transaction_type == TransactionType.SELL
+        ]:
+            matched_transactions_list = [
+                x
+                for x in self.transaction_list
+                if 30
+                >= (x.transaction_date - sell_transaction.transaction_date).days
+                > 0
+                and x.transaction_type == TransactionType.BUY
+            ]
+            for buy_transaction in matched_transactions_list:
+                self._match(
+                    sell_transaction, buy_transaction, MatchType.BED_AND_BREAKFAST
+                )
