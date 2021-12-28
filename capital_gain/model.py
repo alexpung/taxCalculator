@@ -120,7 +120,9 @@ class CgtCalculator:
     def calculate_tax(self) -> None:
         """To calculate chargeable gain and
         allowable loss of a list of same kind of shares"""
-        # TODO same day matching/bed and breakfast/section 104
+        self.match_same_day_disposal()
+        self.match_bed_and_breakfast_disposal()
+        self.match_section104()
 
     @staticmethod
     def _match(
@@ -180,8 +182,9 @@ class CgtCalculator:
                 transaction.transaction_type == TransactionType.BUY
                 and transaction.match_status.unmatched > 0
             ):
+                share_to_be_added = transaction.match_status.unmatched
                 transaction.match_status.match(
-                    transaction.match_status.unmatched,
+                    share_to_be_added,
                     None,
                     MatchType.BED_AND_BREAKFAST,
                 )
@@ -189,13 +192,13 @@ class CgtCalculator:
                     comments.AddToSection104(
                         self.section104.quantity,
                         self.section104.cost,
-                        transaction.size,
-                        transaction.get_partial_value(self.section104.quantity),
+                        share_to_be_added,
+                        transaction.get_partial_value(share_to_be_added),
                     )
                 )
                 self._change_section104(
-                    transaction.match_status.unmatched,
-                    transaction.get_partial_value(self.section104.quantity),
+                    share_to_be_added,
+                    transaction.get_partial_value(share_to_be_added),
                 )
             elif (
                 transaction.transaction_type == TransactionType.SELL
