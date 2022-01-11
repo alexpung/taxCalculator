@@ -162,7 +162,9 @@ class CgtCalculator:
         capital_gain = proceeds - cost
         sell_transaction.match_status.total_gain += capital_gain
         sell_transaction.match_status.comment.append(
-            comments.capital_gain_calc(proceeds, cost)
+            comments.capital_gain_calc(
+                buy_transaction.transaction_id, to_match, proceeds, cost
+            )
         )
         buy_transaction.match_status.match(to_match, sell_transaction, match_type)
         sell_transaction.match_status.match(to_match, buy_transaction, match_type)
@@ -233,5 +235,8 @@ class CgtCalculator:
                 proceeds = transaction.get_partial_value(matchable_shares)
                 capital_gain = proceeds - cost
                 transaction.match_status.total_gain += capital_gain
-                comment = comments.capital_gain_calc(proceeds, cost) + comment
+                comment = (
+                    comments.capital_gain_calc(None, matchable_shares, proceeds, cost)
+                    + comment
+                )
             transaction.match_status.comment.append(comment)

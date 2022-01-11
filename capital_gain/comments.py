@@ -1,6 +1,7 @@
 """ Strings representation of the comment section in transactions """
 
 from decimal import Decimal
+from typing import Union
 
 
 def add_to_section104(
@@ -30,11 +31,19 @@ def remove_from_section104(
 
 
 def capital_gain_calc(
-    transaction_id: int, qty: Decimal, proceeds: Decimal, cost: Decimal
+    transaction_id: Union[None, int], qty: Decimal, proceeds: Decimal, cost: Decimal
 ) -> str:
-    """Comments to show capital gain calculation"""
+    """Comments to show capital gain calculation
+    transaction_id: pass None if it is a section104 match
+    """
+    if transaction_id is None:
+        comment = f"Matched section 104 holding with with quantity {qty:2f}.\n"
+    else:
+        comment = (
+            f"Matched with transaction id {transaction_id} with quantity {qty:2f}.\n"
+        )
     return (
-        f"Matched with transaction id {transaction_id} with quantity {qty:2f}.\n"
+        f"{comment}\n"
         f"Net proceeds after dealing cost is {proceeds:.2f}.\n"
         f"Allowable cost of shares sold is {cost:.2f}.\n"
         f"Capital gain (loss) is {proceeds-cost:.2f}\n"
