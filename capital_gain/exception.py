@@ -22,3 +22,16 @@ class MixedTickerError(Exception):
             f" all ticker should be the same."
         )
         super().__init__(self.message)
+
+
+class UnprocessedShareException(Exception):
+    """Somehow there are unmatched shares that is not a sell
+    remaining buy should all goes to section104, other transaction should have 0 size
+    """
+
+    def __init__(self, transaction_dump: str) -> None:
+        self.message = (
+            f"Unmatched shares (not short sell) remaining in transaction list"
+            f"Check {transaction_dump} for bugs"
+        )
+        super().__init__(self.message)
