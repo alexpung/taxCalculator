@@ -31,6 +31,31 @@ class TestCalculator(unittest.TestCase):
         )
         return transaction.match_status.unmatched, sameday, bednbreakfast
 
+    def test_unmatched_sell(self) -> None:
+        """Test short sell"""
+        trades = [
+            Transaction(
+                "AMD",
+                datetime.date(2021, 10, 5),
+                TransactionType.BUY,
+                Decimal(100),
+                Decimal(10000),
+            ),
+            Transaction(
+                "AMD",
+                datetime.date(2021, 10, 6),
+                TransactionType.SELL,
+                Decimal(150),
+                Decimal(10000),
+            ),
+        ]
+        test = CgtCalculator(trades)
+        test.calculate_tax()
+        self.assertIn(
+            "Sold shares not yet matched (short sale): 50.00",
+            test.transaction_list[1].match_status.comment,
+        )
+
     def test_mixed_ticker(self) -> None:
         """To test that an error is raised when transaction list has mixed ticker
 
