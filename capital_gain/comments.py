@@ -29,9 +29,12 @@ def remove_from_section104(
     )
 
 
-def capital_gain_calc(proceeds: Decimal, cost: Decimal) -> str:
+def capital_gain_calc(
+    transaction_id: int, qty: Decimal, proceeds: Decimal, cost: Decimal
+) -> str:
     """Comments to show capital gain calculation"""
     return (
+        f"Matched with transaction id {transaction_id} with quantity {qty:2f}.\n"
         f"Net proceeds after dealing cost is {proceeds:.2f}.\n"
         f"Allowable cost of shares sold is {cost:.2f}.\n"
         f"Capital gain (loss) is {proceeds-cost:.2f}\n"
