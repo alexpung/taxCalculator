@@ -113,7 +113,7 @@ class TestCalculator(unittest.TestCase):
                 datetime.date(2021, 10, 6),
                 TransactionType.BUY,
                 Decimal(110),
-                Decimal(10000),
+                Decimal(12100),
             ),
             Transaction(
                 "AMD",
@@ -127,21 +127,21 @@ class TestCalculator(unittest.TestCase):
                 datetime.date(2021, 10, 7),
                 TransactionType.SELL,
                 Decimal(150),
-                Decimal(10000),
+                Decimal(19500),
             ),
             Transaction(
                 "AMD",
                 datetime.date(2021, 10, 7),
                 TransactionType.BUY,
                 Decimal(20),
-                Decimal(10000),
+                Decimal(2800),
             ),
             Transaction(
                 "AMD",
                 datetime.date(2021, 10, 8),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(12000),
+                Decimal(15000),
             ),
         ]
         test = CgtCalculator(trades)
@@ -170,14 +170,15 @@ class TestCalculator(unittest.TestCase):
             self._sum_match_type(test.transaction_list[5]),
             (Decimal(100), Decimal(0), Decimal(0)),
         )
+        self.assertEqual(test.transaction_list[3].match_status.total_gain, 800)
 
     def test_bed_and_breakfast_matching(self) -> None:
         """To test bread and breakfast matching works and
         match buy transaction within 30 days of a sell
 
         Expected result: 3rd transaction will match with 2nd transaction
-        6th transaction will match with 5th transaction
-        4th and 7th transaction will not match as they are outside 30 days limit
+        6th and 7th (partial match) transaction will match with 5th transaction
+        4th and 8th transaction will not match as they are outside 30 days limit
         """
         trades = [
             Transaction(
@@ -192,42 +193,49 @@ class TestCalculator(unittest.TestCase):
                 datetime.date(2021, 10, 6),
                 TransactionType.SELL,
                 Decimal(50),
-                Decimal(10000),
+                Decimal(5000),
             ),
             Transaction(
                 "AMD",
                 datetime.date(2021, 11, 5),
                 TransactionType.BUY,
-                Decimal(20),
-                Decimal(12000),
+                Decimal(40),
+                Decimal(3200),
             ),
             Transaction(
                 "AMD",
                 datetime.date(2021, 11, 6),
                 TransactionType.BUY,
                 Decimal(30),
-                Decimal(10000),
+                Decimal(3300),
             ),
             Transaction(
                 "AMD",
                 datetime.date(2021, 11, 7),
                 TransactionType.SELL,
-                Decimal(20),
-                Decimal(10000),
+                Decimal(15),
+                Decimal(2400),
+            ),
+            Transaction(
+                "AMD",
+                datetime.date(2021, 12, 6),
+                TransactionType.BUY,
+                Decimal(10),
+                Decimal(1300),
             ),
             Transaction(
                 "AMD",
                 datetime.date(2021, 12, 7),
                 TransactionType.BUY,
                 Decimal(10),
-                Decimal(12000),
+                Decimal(1400),
             ),
             Transaction(
                 "AMD",
                 datetime.date(2021, 12, 8),
                 TransactionType.BUY,
                 Decimal(10),
-                Decimal(12000),
+                Decimal(1500),
             ),
         ]
         test = CgtCalculator(trades)
@@ -238,11 +246,11 @@ class TestCalculator(unittest.TestCase):
         )
         self.assertEqual(
             self._sum_match_type(test.transaction_list[1]),
-            (Decimal(30), Decimal(0), Decimal(20)),
+            (Decimal(10), Decimal(0), Decimal(40)),
         )
         self.assertEqual(
             self._sum_match_type(test.transaction_list[2]),
-            (Decimal(0), Decimal(0), Decimal(20)),
+            (Decimal(0), Decimal(0), Decimal(40)),
         )
         self.assertEqual(
             self._sum_match_type(test.transaction_list[3]),
@@ -250,7 +258,7 @@ class TestCalculator(unittest.TestCase):
         )
         self.assertEqual(
             self._sum_match_type(test.transaction_list[4]),
-            (Decimal(10), Decimal(0), Decimal(10)),
+            (Decimal(0), Decimal(0), Decimal(15)),
         )
         self.assertEqual(
             self._sum_match_type(test.transaction_list[5]),
@@ -258,8 +266,14 @@ class TestCalculator(unittest.TestCase):
         )
         self.assertEqual(
             self._sum_match_type(test.transaction_list[6]),
+            (Decimal(5), Decimal(0), Decimal(5)),
+        )
+        self.assertEqual(
+            self._sum_match_type(test.transaction_list[7]),
             (Decimal(10), Decimal(0), Decimal(0)),
         )
+        self.assertEqual(test.transaction_list[1].match_status.total_gain, 800)
+        self.assertEqual(test.transaction_list[4].match_status.total_gain, 400)
 
     def test_sorted(self) -> None:
         """To test the sort function sort transaction list by date
