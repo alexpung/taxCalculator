@@ -43,6 +43,7 @@ class HMRCMatchStatus:
 
     unmatched: Decimal
     record: list[HMRCMatchRecord] = field(default_factory=list)
+    comment: list[object] = field(default_factory=list)
 
     def match(
         self,
@@ -77,7 +78,6 @@ class Transaction:
     size: Decimal  # for fractional shares
     transaction_value: Decimal
     match_status: HMRCMatchStatus = field(init=False)
-    calculations_comment: list[object] = field(default_factory=list)
     transaction_id: int = field(init=False)
     transaction_id_counter: ClassVar[int] = 1
 
@@ -202,7 +202,6 @@ class CgtCalculator:
                 comment = self.section104.add_to_section104(
                     share_to_be_added, transaction.get_partial_value(share_to_be_added)
                 )
-                transaction.calculations_comment.append(comment)
             elif (
                 transaction.transaction_type == TransactionType.SELL
                 and transaction.match_status.unmatched > 0
@@ -215,4 +214,4 @@ class CgtCalculator:
                 )
 
                 comment = self.section104.remove_from_section104(matchable_shares)
-                transaction.calculations_comment.append(comment)
+            transaction.match_status.comment.append(comment)
