@@ -197,7 +197,7 @@ class CgtCalculator:
                 transaction.match_status.match(
                     share_to_be_added,
                     None,
-                    MatchType.BED_AND_BREAKFAST,
+                    MatchType.SECTION104,
                 )
                 comment = self.section104.add_to_section104(
                     share_to_be_added, transaction.get_partial_value(share_to_be_added)
@@ -210,7 +210,7 @@ class CgtCalculator:
                     transaction.match_status.unmatched, self.section104.quantity
                 )
                 transaction.match_status.match(
-                    matchable_shares, None, MatchType.BED_AND_BREAKFAST
+                    matchable_shares, None, MatchType.SECTION104
                 )
 
                 comment = self.section104.remove_from_section104(matchable_shares)
