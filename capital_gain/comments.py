@@ -16,7 +16,7 @@ class Comment:
             f"with allowable cost {cost}.\n"
             f"New total number of share(s) for section 104 "
             f"is {new_quantity}.\n"
-            f"New total allowable cost is {new_cost}"
+            f"New total allowable cost is {new_cost}\n"
         )
 
     @staticmethod
@@ -29,5 +29,14 @@ class Comment:
             f"with allowable cost {cost}.\n"
             f"New total number of share(s) for section 104 "
             f"is {new_quantity}.\n"
-            f"New total allowable cost is {new_cost}"
+            f"New total allowable cost is {new_cost}\n"
+        )
+
+    @staticmethod
+    def capital_gain_calc(proceeds: Decimal, cost: Decimal) -> str:
+        """Comments to show capital gain calculation"""
+        return (
+            f"Net proceeds after dealing cost is {proceeds}.\n"
+            f"Allowable cost of shares sold is {cost}.\n"
+            f"Capital gain (loss) is {proceeds-cost}\n"
         )
