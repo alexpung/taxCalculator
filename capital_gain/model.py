@@ -8,7 +8,11 @@ from enum import Enum, auto
 from typing import ClassVar, Tuple, Union
 
 from capital_gain import comments
-from capital_gain.exception import MixedTickerError, OverMatchError
+from capital_gain.exception import (
+    MixedTickerError,
+    OverMatchError,
+    UnprocessedShareException,
+)
 
 
 class TransactionType(Enum):
@@ -43,7 +47,7 @@ class HMRCMatchStatus:
 
     unmatched: Decimal
     record: list[HMRCMatchRecord] = field(default_factory=list)
-    comment: list[object] = field(default_factory=list)
+    comment: str = ""
     total_gain: Decimal = Decimal(0)
 
     def match(
@@ -66,7 +70,7 @@ class Transaction:
     Ticker: A string represent the symbol of the security
     transaction_date: Datetime object representing the date of transaction
     Transaction_type: Buy/Sell/Dividend/Corporate action as defined in enum
-    size: Number of shares
+    size: Number of shares if buy/sell. 0 otherwise
     Transaction value: Net value of transactions AFTER allowable dealing cost
     """
 
@@ -144,6 +148,7 @@ class CgtCalculator:
         self.match_same_day_disposal()
         self.match_bed_and_breakfast_disposal()
         self.match_section104()
+        self.handle_unmatched_shares()
 
     @staticmethod
     def _match(
@@ -161,10 +166,8 @@ class CgtCalculator:
         cost = buy_transaction.get_partial_value(to_match)
         capital_gain = proceeds - cost
         sell_transaction.match_status.total_gain += capital_gain
-        sell_transaction.match_status.comment.append(
-            comments.capital_gain_calc(
-                buy_transaction.transaction_id, to_match, proceeds, cost
-            )
+        sell_transaction.match_status.comment += comments.capital_gain_calc(
+            buy_transaction.transaction_id, to_match, proceeds, cost
         )
         buy_transaction.match_status.match(to_match, sell_transaction, match_type)
         sell_transaction.match_status.match(to_match, buy_transaction, match_type)
@@ -239,4 +242,15 @@ class CgtCalculator:
                     comments.capital_gain_calc(None, matchable_shares, proceeds, cost)
                     + comment
                 )
-            transaction.match_status.comment.append(comment)
+            transaction.match_status.comment += comment
+
+    def handle_unmatched_shares(self) -> None:
+        """Add a comment for remaining short sale sell that is not matched"""
+        for transaction in self.transaction_list:
+            if transaction.match_status.unmatched:
+                if transaction.transaction_type == TransactionType.SELL:
+                    transaction.match_status.comment += comments.unmatched_shares(
+                        transaction.match_status.unmatched
+                    )
+                else:
+                    raise UnprocessedShareException(str(transaction))
