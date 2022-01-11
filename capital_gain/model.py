@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 import datetime
 from decimal import Decimal
 from enum import Enum, auto
-from typing import ClassVar, Union
+from typing import ClassVar, Tuple, Union
 
 from capital_gain.comments import Comment
 from capital_gain.exception import MixedTickerError, OverMatchError
@@ -44,6 +44,7 @@ class HMRCMatchStatus:
     unmatched: Decimal
     record: list[HMRCMatchRecord] = field(default_factory=list)
     comment: list[object] = field(default_factory=list)
+    total_gain: Decimal = Decimal(0)
 
     def match(
         self,
@@ -110,13 +111,18 @@ class Section104:
         self.cost += cost
         return Comment.add_to_section104(qty, cost, self.quantity, self.cost)
 
-    def remove_from_section104(self, qty: Decimal) -> str:
-        """Handle removing shares to section 104 pool and return a comment string"""
+    def remove_from_section104(self, qty: Decimal) -> Tuple[str, Decimal]:
+        """Handle removing shares to section 104 pool
+        return a comment string and the allowable cost of the removed shares
+        """
         allowable_cost = self.cost * qty / self.quantity
         self.cost -= allowable_cost
         self.quantity -= qty
-        return Comment.remove_from_section104(
-            qty, allowable_cost, self.quantity, self.cost
+        return (
+            Comment.remove_from_section104(
+                qty, allowable_cost, self.quantity, self.cost
+            ),
+            allowable_cost,
         )
 
 
@@ -212,6 +218,9 @@ class CgtCalculator:
                 transaction.match_status.match(
                     matchable_shares, None, MatchType.SECTION104
                 )
-
-                comment = self.section104.remove_from_section104(matchable_shares)
+                comment, cost = self.section104.remove_from_section104(matchable_shares)
+                proceeds = transaction.get_partial_value(matchable_shares)
+                capital_gain = proceeds - cost
+                transaction.match_status.total_gain += capital_gain
+                comment = Comment.capital_gain_calc(proceeds, cost) + comment
             transaction.match_status.comment.append(comment)

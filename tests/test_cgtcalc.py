@@ -329,3 +329,55 @@ class TestCalculator(unittest.TestCase):
         self.assertEqual(
             datetime.date(2022, 12, 6), test.transaction_list[5].transaction_date
         )
+
+    def test_hmrc_example3(self) -> None:
+        """
+        In April 2014 Ms Pierson buys 1,000 Lobster plc shares for 400p per share plus
+        dealing costs of £150 including VAT. This is
+        her first acquisition of Lobster plc shares.
+        In September 2017 she buys an additional 500 Lobster plc shares for 410p per
+        share plus dealing costs of £80
+        including VAT.
+        In May 2020 she sells 700 Lobster plc shares for 480p per share
+        (£3,360 disposal proceeds), incurring dealing costs of £100
+        including VAT.
+        In February 2021 she sells 400 Lobster plc shares for 520p per share
+        (£2,080 disposal proceeds), incurring dealing costs of
+        £105 including VAT."""
+
+        trades = [
+            Transaction(
+                "Lobster plc",
+                datetime.date(2014, 4, 1),
+                TransactionType.BUY,
+                Decimal(1000),
+                Decimal(4150),  # £4*1000 + £150
+            ),
+            Transaction(
+                "Lobster plc",
+                datetime.date(2017, 9, 1),
+                TransactionType.BUY,
+                Decimal(500),
+                Decimal(2130),  # £4.1*500 + £80
+            ),
+            Transaction(
+                "Lobster plc",
+                datetime.date(2020, 5, 1),
+                TransactionType.SELL,
+                Decimal(700),
+                Decimal(3260),  # £3360 - £100
+            ),
+            Transaction(
+                "Lobster plc",
+                datetime.date(2021, 2, 1),
+                TransactionType.SELL,
+                Decimal(400),
+                Decimal(1975),  # £2080 - £105
+            ),
+        ]
+        test = CgtCalculator(trades)
+        test.calculate_tax()
+        self.assertEqual(int(test.section104.cost), int(Decimal(1674.66666666667)))
+        self.assertEqual(test.section104.quantity, Decimal(400))
+        self.assertEqual(int(test.transaction_list[2].match_status.total_gain), 329)
+        self.assertEqual(int(test.transaction_list[3].match_status.total_gain), 300)
