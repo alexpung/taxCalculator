@@ -13,7 +13,7 @@ def add_to_section104(
         f"with allowable cost {cost:.2f}.\n"
         f"New total number of share(s) for section 104 "
         f"is {new_quantity:.2f}.\n"
-        f"New total allowable cost is {new_cost:.2f}\n"
+        f"New total allowable cost is {new_cost:.2f}\n\n"
     )
 
 
@@ -26,7 +26,7 @@ def remove_from_section104(
         f"with allowable cost {cost:.2f}.\n"
         f"New total number of share(s) for section 104 "
         f"is {new_quantity:.2f}.\n"
-        f"New total allowable cost is {new_cost:.2f}\n"
+        f"New total allowable cost is {new_cost:.2f}\n\n"
     )
 
 
@@ -43,8 +43,13 @@ def capital_gain_calc(
             f"Matched with transaction id {transaction_id} with quantity {qty:2f}.\n"
         )
     return (
-        f"{comment}\n"
+        f"{comment}"
         f"Net proceeds after dealing cost is {proceeds:.2f}.\n"
         f"Allowable cost of shares sold is {cost:.2f}.\n"
-        f"Capital gain (loss) is {proceeds-cost:.2f}\n"
+        f"Capital gain (loss) is {proceeds-cost:.2f}\n\n"
     )
+
+
+def unmatched_shares(share: Decimal) -> str:
+    """Comment for unmatched short sale"""
+    return f"Sold shares not yet matched (short sale): {share:.2f}\n"
