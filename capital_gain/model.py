@@ -102,6 +102,7 @@ class Transaction:
 class Section104:
     """Data class for storing section 104 pool of shares"""
 
+    ticker: str
     quantity: Decimal
     cost: Decimal
 
