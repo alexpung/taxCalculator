@@ -4,8 +4,9 @@ from decimal import Decimal
 from typing import Tuple
 import unittest
 
+from capital_gain.calculator import CgtCalculator
 from capital_gain.exception import MixedTickerError
-from capital_gain.model import CgtCalculator, MatchType, Transaction, TransactionType
+from capital_gain.model import MatchType, Transaction, TransactionType
 
 
 class TestCalculator(unittest.TestCase):
