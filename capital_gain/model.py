@@ -7,6 +7,7 @@ from decimal import Decimal
 from enum import Enum, auto
 from typing import ClassVar, Tuple, Union
 
+from iso3166 import Country
 from iso4217 import Currency
 
 from capital_gain import comments
@@ -19,6 +20,9 @@ class TransactionType(Enum):
     BUY = auto()
     SELL = auto()
     CORPORATE_ACTION = auto()
+    WITHHOLDING = "Withholding Tax"
+    DIVIDEND = "Dividends"
+    DIVIDEND_IN_LIEU = "Payment In Lieu Of Dividends"
 
 
 class MatchType(Enum):
@@ -87,8 +91,9 @@ class Transaction:
 class Dividend(Transaction):
     """Dataclass to store dividend information"""
 
-    gross_dividend: Decimal
-    withholding_tax: Decimal
+    value: Decimal
+    country: Country
+    description: str = field(kw_only=True, default="")
     currency: Currency = field(kw_only=True, default=Currency("GBP"))
     exchange_rate: Decimal = field(kw_only=True, default=Decimal(1))
 
