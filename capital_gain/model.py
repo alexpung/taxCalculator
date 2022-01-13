@@ -7,6 +7,8 @@ from decimal import Decimal
 from enum import Enum, auto
 from typing import ClassVar, Tuple, Union
 
+from iso4217 import Currency
+
 from capital_gain import comments
 from capital_gain.exception import OverMatchError
 
@@ -32,7 +34,7 @@ class HMRCMatchRecord:
     """Record of whether part or all of the transaction belongs to same day/
     bed and breakfast or section 104"""
 
-    transaction: Transaction | None
+    transaction: Trade | None
     size: Decimal
     type: MatchType
 
@@ -49,7 +51,7 @@ class HMRCMatchStatus:
     def match(
         self,
         size: Decimal,
-        matched_transaction: Union[Transaction, None],
+        matched_transaction: Union[Trade, None],
         match_type: MatchType,
     ) -> None:
         """Update the transaction record when it is matched"""
@@ -62,36 +64,54 @@ class HMRCMatchStatus:
 
 @dataclass
 class Transaction:
-    """Transaction class to store transaction
-    Ticker: A string represent the symbol of the security
-    transaction_date: Datetime object representing the date of transaction
-    Transaction_type: Buy/Sell/Dividend/Corporate action as defined in enum
-    size: Number of shares if buy/sell. 0 otherwise
-    Transaction value: Net value of transactions AFTER allowable dealing cost
-    """
-
-    # pylint: disable=too-many-instance-attributes
-    # It is not avoidable that a transaction have many attributes
+    """base class for all transactions"""
 
     ticker: str
     transaction_date: datetime.date
     transaction_type: TransactionType
-    size: Decimal  # for fractional shares
-    transaction_value: Decimal
-    match_status: HMRCMatchStatus = field(init=False)
     transaction_id: int = field(init=False)
     transaction_id_counter: ClassVar[int] = 1
 
     def __post_init__(self) -> None:
-        self.match_status = HMRCMatchStatus(self.size)
-        self.transaction_id = Transaction.transaction_id_counter
-        Transaction.transaction_id_counter += 1
+        self.transaction_id = Trade.transaction_id_counter
+        Trade.transaction_id_counter += 1
 
-    def __lt__(self, other: Transaction) -> bool:
+    def __lt__(self, other: Trade) -> bool:
         return self.transaction_date < other.transaction_date
 
-    def __gt__(self, other: Transaction) -> bool:
+    def __gt__(self, other: Trade) -> bool:
         return self.transaction_date > other.transaction_date
+
+
+@dataclass
+class Dividend(Transaction):
+    """Dataclass to store dividend information"""
+
+    gross_dividend: Decimal
+    withholding_tax: Decimal
+    currency: Currency = field(kw_only=True, default=Currency("GBP"))
+    exchange_rate: Decimal = field(kw_only=True, default=Decimal(1))
+
+
+@dataclass
+class Trade(Transaction):
+    """Dataclass to store transaction
+    ticker: A string represent the symbol of the security
+    size: Number of shares if buy/sell.
+    transaction value: Net value of transactions AFTER allowable dealing cost
+    fee_and_tax: optional keyward parameter indicating fee and tax incurred
+    """
+
+    size: Decimal  # for fractional shares
+    transaction_value: Decimal
+    match_status: HMRCMatchStatus = field(init=False)
+    fee_and_tax: Decimal = field(kw_only=True, default=Decimal(0))
+    currency: Currency = field(kw_only=True, default=Currency("GBP"))
+    exchange_rate: Decimal = field(kw_only=True, default=Decimal(1))
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.match_status = HMRCMatchStatus(self.size)
 
     def get_partial_value(self, qty: Decimal) -> Decimal:
         """return the value for partial share matching for this transaction"""

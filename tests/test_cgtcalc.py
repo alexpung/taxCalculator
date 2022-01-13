@@ -6,14 +6,14 @@ import unittest
 
 from capital_gain.calculator import CgtCalculator
 from capital_gain.exception import MixedTickerError
-from capital_gain.model import MatchType, Transaction, TransactionType
+from capital_gain.model import MatchType, Trade, TransactionType
 
 
 class TestCalculator(unittest.TestCase):
     """To test that capital gain is calculated correctly"""
 
     @staticmethod
-    def _sum_match_type(transaction: Transaction) -> Tuple[Decimal, Decimal, Decimal]:
+    def _sum_match_type(transaction: Trade) -> Tuple[Decimal, Decimal, Decimal]:
         bednbreakfast = sum(
             [
                 match.size
@@ -35,14 +35,14 @@ class TestCalculator(unittest.TestCase):
     def test_unmatched_sell(self) -> None:
         """Test short sell"""
         trades = [
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 5),
                 TransactionType.BUY,
                 Decimal(100),
                 Decimal(10000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.SELL,
@@ -63,21 +63,21 @@ class TestCalculator(unittest.TestCase):
         Expected result: Raise MixedTickerError since different Ticker is mixed in.
         """
         trades = [
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 5),
                 TransactionType.BUY,
                 Decimal(100),
                 Decimal(10000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.BUY,
                 Decimal(100),
                 Decimal(10000),
             ),
-            Transaction(
+            Trade(
                 "JMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.BUY,
@@ -93,21 +93,21 @@ class TestCalculator(unittest.TestCase):
         Expected result: No MixedTickerError is raised
         """
         trades = [
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 5),
                 TransactionType.BUY,
                 Decimal(100),
                 Decimal(10000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.BUY,
                 Decimal(110),
                 Decimal(10000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.BUY,
@@ -127,42 +127,42 @@ class TestCalculator(unittest.TestCase):
         that were sold unmatched
         """
         trades = [
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 5),
                 TransactionType.BUY,
                 Decimal(100),
                 Decimal(10000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.BUY,
                 Decimal(110),
                 Decimal(12100),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 7),
                 TransactionType.BUY,
                 Decimal(100),
                 Decimal(12000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 7),
                 TransactionType.SELL,
                 Decimal(150),
                 Decimal(19500),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 7),
                 TransactionType.BUY,
                 Decimal(20),
                 Decimal(2800),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 8),
                 TransactionType.BUY,
@@ -207,56 +207,56 @@ class TestCalculator(unittest.TestCase):
         4th and 8th transaction will not match as they are outside 30 days limit
         """
         trades = [
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 5),
                 TransactionType.BUY,
                 Decimal(100),
                 Decimal(10000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.SELL,
                 Decimal(50),
                 Decimal(5000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 11, 5),
                 TransactionType.BUY,
                 Decimal(40),
                 Decimal(3200),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 11, 6),
                 TransactionType.BUY,
                 Decimal(30),
                 Decimal(3300),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 11, 7),
                 TransactionType.SELL,
                 Decimal(15),
                 Decimal(2400),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 12, 6),
                 TransactionType.BUY,
                 Decimal(10),
                 Decimal(1300),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 12, 7),
                 TransactionType.BUY,
                 Decimal(10),
                 Decimal(1400),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 12, 8),
                 TransactionType.BUY,
@@ -307,42 +307,42 @@ class TestCalculator(unittest.TestCase):
         Expected result: Transactions are sorted in chronological order
         """
         trades = [
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 1, 5),
                 TransactionType.BUY,
                 Decimal(100),
                 Decimal(10000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2022, 12, 6),
                 TransactionType.SELL,
                 Decimal(50),
                 Decimal(10000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 12, 8),
                 TransactionType.BUY,
                 Decimal(20),
                 Decimal(12000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 11, 6),
                 TransactionType.BUY,
                 Decimal(30),
                 Decimal(10000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2021, 12, 7),
                 TransactionType.SELL,
                 Decimal(10),
                 Decimal(10000),
             ),
-            Transaction(
+            Trade(
                 "AMD",
                 datetime.date(2020, 12, 7),
                 TransactionType.BUY,
@@ -386,28 +386,28 @@ class TestCalculator(unittest.TestCase):
         £105 including VAT."""
 
         trades = [
-            Transaction(
+            Trade(
                 "Lobster plc",
                 datetime.date(2014, 4, 1),
                 TransactionType.BUY,
                 Decimal(1000),
                 Decimal(4150),  # £4*1000 + £150
             ),
-            Transaction(
+            Trade(
                 "Lobster plc",
                 datetime.date(2017, 9, 1),
                 TransactionType.BUY,
                 Decimal(500),
                 Decimal(2130),  # £4.1*500 + £80
             ),
-            Transaction(
+            Trade(
                 "Lobster plc",
                 datetime.date(2020, 5, 1),
                 TransactionType.SELL,
                 Decimal(700),
                 Decimal(3260),  # £3360 - £100
             ),
-            Transaction(
+            Trade(
                 "Lobster plc",
                 datetime.date(2021, 2, 1),
                 TransactionType.SELL,

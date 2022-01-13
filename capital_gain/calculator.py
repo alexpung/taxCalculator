@@ -5,13 +5,13 @@ from decimal import Decimal
 
 from capital_gain import comments
 from capital_gain.exception import MixedTickerError, UnprocessedShareException
-from capital_gain.model import MatchType, Section104, Transaction, TransactionType
+from capital_gain.model import MatchType, Section104, Trade, TransactionType
 
 
 class CgtCalculator:
     """To calculate capital gain"""
 
-    def __init__(self, transaction_list: list[Transaction]) -> None:
+    def __init__(self, transaction_list: list[Trade]) -> None:
         ticker = transaction_list[0].ticker
         for transaction in transaction_list:
             if transaction.ticker != ticker:
@@ -31,8 +31,8 @@ class CgtCalculator:
 
     @staticmethod
     def _match(
-        buy_transaction: Transaction,
-        sell_transaction: Transaction,
+        buy_transaction: Trade,
+        sell_transaction: Trade,
         match_type: MatchType,
     ) -> None:
         """Calculate capital gain if two transactions are matched with same day or
