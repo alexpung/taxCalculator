@@ -43,17 +43,18 @@ def transform_dividend(xml_entry: ET.Element) -> Dividend:
     )
 
 
-dividend_list = []
-dividend_type = [
-    TransactionType.DIVIDEND,
-    TransactionType.DIVIDEND_IN_LIEU,
-    TransactionType.WITHHOLDING,
-]
-for file in glob.glob("*.xml"):
-    tree = ET.parse(file)
-    root = tree.getroot()
-    test = tree.findall(".//CashTransaction")
-    dividend_list += [
-        x for x in test if x.attrib["type"] in [x.value for x in dividend_type]
+def parse_dividend() -> list[Dividend]:
+    """Parse xml to extract Dividend objects"""
+    dividend_list = []
+    dividend_type = [
+        TransactionType.DIVIDEND,
+        TransactionType.DIVIDEND_IN_LIEU,
+        TransactionType.WITHHOLDING,
     ]
-    new_dividend_list = [transform_dividend(dividend) for dividend in dividend_list]
+    for file in glob.glob("*.xml"):
+        tree = ET.parse(file)
+        test = tree.findall(".//CashTransaction")
+        dividend_list += [
+            x for x in test if x.attrib["type"] in [x.value for x in dividend_type]
+        ]
+    return [transform_dividend(dividend) for dividend in dividend_list]
