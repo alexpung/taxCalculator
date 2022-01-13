@@ -1,5 +1,5 @@
 /main.py
-/*.xml
-/*.xlsx
-/*.xlsx#
+*.xml
+*.xlsx
+*.xlsx#
 /.coverage
