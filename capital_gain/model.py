@@ -37,8 +37,8 @@ class Money:
     """class to record monetary value of various currency"""
 
     value: Decimal
-    exchange_rate: Decimal = field(kw_only=True, default=Decimal(1))
-    currency: Currency = field(kw_only=True, default=Currency("GBP"))
+    exchange_rate: Decimal = field(default=Decimal(1))
+    currency: Currency = field(default=Currency("GBP"))
 
     def get_value(self) -> Decimal:
         """return transaction value in GBP"""
@@ -105,7 +105,7 @@ class Dividend(Transaction):
 
     value: Money
     country: str
-    description: str = field(kw_only=True, default="")
+    description: str = field(default="")
 
 
 @dataclass
@@ -120,7 +120,7 @@ class Trade(Transaction):
     size: Decimal  # for fractional shares
     transaction_value: Money
     match_status: HMRCMatchStatus = field(init=False)
-    fee_and_tax: Decimal = field(kw_only=True, default=Decimal(0))
+    fee_and_tax: Decimal = field(default=Decimal(0))
 
     def __post_init__(self) -> None:
         super().__post_init__()
