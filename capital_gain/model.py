@@ -156,6 +156,11 @@ class Section104:
         """Handle removing shares to section 104 pool
         return a comment string and the allowable cost of the removed shares
         """
+        if qty > self.quantity:
+            raise ValueError(
+                f"Attempt to remove {qty} from {self.quantity} "
+                f"from section 104 pool of {self.ticker}"
+            )
         allowable_cost = self.cost * qty / self.quantity
         self.cost -= allowable_cost
         self.quantity -= qty
