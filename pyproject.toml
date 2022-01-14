@@ -5,8 +5,8 @@ description = "A helper for lising out your dividend and capital gains for UK ta
 authors = ["Alex Pun <alexpung@protonmail.com>"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/KapJI/capital-gains-calculator"
-repository = "https://github.com/KapJI/capital-gains-calculator"
+homepage = "https://github.com/alexpung/taxCalculator"
+repository = "https://github.com/alexpung/taxCalculator"
 keywords = [
     "capital gain",
     "Interactive Brokers",
