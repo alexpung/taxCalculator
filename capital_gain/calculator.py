@@ -114,7 +114,7 @@ class CgtCalculator:
                     transaction.match_status.unmatched, self.section104.quantity
                 )
                 if matchable_shares == 0:
-                    return
+                    continue
                 transaction.match_status.match(
                     matchable_shares, None, MatchType.SECTION104
                 )
