@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from iso3166 import countries
 from iso4217 import Currency
 
-from capital_gain.model import Dividend, TransactionType
+from capital_gain.model import Dividend, Money, TransactionType
 
 
 def get_country_code(xml_entry: ET.Element) -> str:
@@ -31,21 +31,24 @@ def get_country_code(xml_entry: ET.Element) -> str:
 
 def transform_dividend(xml_entry: ET.Element) -> Dividend:
     """parse cash transaction entries to Dividend objects"""
+    value = Money(
+        Decimal(xml_entry.attrib["amount"]),
+        Decimal(xml_entry.attrib["fxRateToBase"]),
+        Currency(xml_entry.attrib["currency"]),
+    )
     return Dividend(
         xml_entry.attrib["symbol"],
         datetime.strptime(xml_entry.attrib["reportDate"], "%d-%b-%y"),
         TransactionType(xml_entry.attrib["type"]),
-        Decimal(xml_entry.attrib["amount"]),
+        value,
         get_country_code(xml_entry),
         description=str(xml_entry.attrib["description"]),
-        currency=Currency(xml_entry.attrib["currency"]),
-        exchange_rate=Decimal(xml_entry.attrib["fxRateToBase"]),
     )
 
 
 def parse_dividend() -> list[Dividend]:
     """Parse xml to extract Dividend objects"""
-    dividend_list = []
+    dividend_list: list[ET.Element] = []
     dividend_type = [
         TransactionType.DIVIDEND,
         TransactionType.DIVIDEND_IN_LIEU,
