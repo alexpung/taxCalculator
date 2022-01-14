@@ -26,6 +26,7 @@ openpyxl = "^3.0.9"
 iso3166 = "^2.0.2"
 lxml = "^4.7.1"
 iso4217 = "^1.7.20211001"
+kivy = {url = "https://github.com/kivy/kivy/archive/master.zip"}
 
 [tool.poetry.dev-dependencies]
 pylint = "^2.12.2"
