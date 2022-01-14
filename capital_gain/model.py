@@ -16,8 +16,8 @@ from capital_gain.exception import OverMatchError
 class TransactionType(Enum):
     """Enum of type of transactions"""
 
-    BUY = auto()
-    SELL = auto()
+    BUY = "BUY"
+    SELL = "SELL"
     CORPORATE_ACTION = auto()
     WITHHOLDING = "Withholding Tax"
     DIVIDEND = "Dividends"
@@ -115,7 +115,10 @@ class Trade(Transaction):
     ticker: A string represent the symbol of the security
     size: Number of shares if buy/sell.
     transaction value: Gross value of the trade
-    fee_and_tax: optional keyword parameter indicating fee and tax incurred
+    fee_and_tax: Note that fee could be negative due to rebates,
+    here the convention is negative value means fee, and positive value mean credit
+    (same as xml report)
+    tax also would have a negative value
     """
 
     size: Decimal  # for fractional shares
@@ -129,7 +132,7 @@ class Trade(Transaction):
 
     def get_partial_value(self, qty: Decimal) -> Decimal:
         """return the value for partial share matching for this transaction"""
-        net_value = self.transaction_value.get_value() - sum(
+        net_value = self.transaction_value.get_value() + sum(
             fee.value for fee in self.fee_and_tax
         )
         return net_value * qty / self.size
