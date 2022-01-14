@@ -87,7 +87,7 @@ def transform_trade(xml_entry: ET.Element) -> Trade:
     )
 
 
-def parse_dividend() -> list[Dividend]:
+def parse_dividend(path: str) -> list[Dividend]:
     """Parse xml to extract Dividend objects"""
     dividend_list: list[ET.Element] = []
     dividend_type = [
@@ -95,7 +95,7 @@ def parse_dividend() -> list[Dividend]:
         TransactionType.DIVIDEND_IN_LIEU,
         TransactionType.WITHHOLDING,
     ]
-    for file in glob.glob("*.xml"):
+    for file in glob.glob(path + "/*.xml"):
         tree = ET.parse(file)
         test = tree.findall(".//CashTransaction")
         dividend_list += [
@@ -104,10 +104,10 @@ def parse_dividend() -> list[Dividend]:
     return [transform_dividend(dividend) for dividend in dividend_list]
 
 
-def parse_trade() -> list[Trade]:
+def parse_trade(path: str) -> list[Trade]:
     """Parse xml to extract Trade objects"""
     trade_list: list[ET.Element] = []
-    for file in glob.glob("*.xml"):
+    for file in glob.glob(path + "/*.xml"):
         tree = ET.parse(file)
         test = tree.findall(".//Trades/Order")
         trade_list += [x for x in test if x.attrib["assetCategory"] == "STK"]
