@@ -81,7 +81,8 @@ def transform_trade(xml_entry: ET.Element) -> Trade:
         xml_entry.attrib["symbol"],
         datetime.strptime(xml_entry.attrib["tradeDate"], "%d-%b-%y"),
         TransactionType(xml_entry.attrib["buySell"]),
-        Decimal(xml_entry.attrib["quantity"]),
+        # In xml report sell trade have negative quantity, use abs to correct this
+        abs(Decimal(xml_entry.attrib["quantity"])),
         value,
         fee_and_tax,
     )
