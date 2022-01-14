@@ -39,6 +39,7 @@ class Money:
     value: Decimal
     exchange_rate: Decimal = field(default=Decimal(1))
     currency: Currency = field(default=Currency("GBP"))
+    note: str = ""
 
     def get_value(self) -> Decimal:
         """return transaction value in GBP"""
@@ -113,14 +114,14 @@ class Trade(Transaction):
     """Dataclass to store transaction
     ticker: A string represent the symbol of the security
     size: Number of shares if buy/sell.
-    transaction value: Net value of transactions AFTER allowable dealing cost
-    fee_and_tax: optional keyward parameter indicating fee and tax incurred
+    transaction value: Gross value of the trade
+    fee_and_tax: optional keyword parameter indicating fee and tax incurred
     """
 
     size: Decimal  # for fractional shares
     transaction_value: Money
     match_status: HMRCMatchStatus = field(init=False)
-    fee_and_tax: Decimal = field(default=Decimal(0))
+    fee_and_tax: list[Money] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -128,7 +129,10 @@ class Trade(Transaction):
 
     def get_partial_value(self, qty: Decimal) -> Decimal:
         """return the value for partial share matching for this transaction"""
-        return qty * self.transaction_value.get_value() / self.size
+        net_value = self.transaction_value.get_value() - sum(
+            fee.value for fee in self.fee_and_tax
+        )
+        return net_value * qty / self.size
 
 
 @dataclass
