@@ -90,6 +90,7 @@ class CgtCalculator:
     def match_section104(self) -> None:
         """To handle section 104 share matching"""
         for transaction in self.transaction_list:
+            comment = ""
             if (
                 transaction.transaction_type == TransactionType.BUY
                 and transaction.match_status.unmatched > 0
@@ -121,7 +122,8 @@ class CgtCalculator:
                     comments.capital_gain_calc(None, matchable_shares, proceeds, cost)
                     + comment
                 )
-            transaction.match_status.comment += comment
+            if comment:
+                transaction.match_status.comment += comment
 
     def handle_unmatched_shares(self) -> None:
         """Add a comment for remaining short sale sell that is not matched"""
