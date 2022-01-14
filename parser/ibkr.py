@@ -47,9 +47,17 @@ def transform_dividend(xml_entry: ET.Element) -> Dividend:
 
 
 def transform_trade(xml_entry: ET.Element) -> Trade:
-    """parse trade transaction to Trade objects"""
+    """parse trade transaction to Trade objects
+    # adjust the sign of the price when buying
+    # note: Using abs() does not work as it is possible to buy/sell at negative price
+    # thus making the wrong conversion
+    """
+    if xml_entry.attrib["buySell"] == TransactionType.BUY.value:
+        proceeds = Decimal(xml_entry.attrib["proceeds"]) * -1
+    else:
+        proceeds = Decimal(xml_entry.attrib["proceeds"])
     value = Money(
-        Decimal(xml_entry.attrib["tradeMoney"]),
+        proceeds,
         Decimal(xml_entry.attrib["fxRateToBase"]),
         Currency(xml_entry.attrib["currency"]),
     )
