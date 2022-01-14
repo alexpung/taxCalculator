@@ -33,6 +33,19 @@ class MatchType(Enum):
 
 
 @dataclass
+class Money:
+    """class to record monetary value of various currency"""
+
+    value: Decimal
+    exchange_rate: Decimal = field(kw_only=True, default=Decimal(1))
+    currency: Currency = field(kw_only=True, default=Currency("GBP"))
+
+    def get_value(self) -> Decimal:
+        """return transaction value in GBP"""
+        return self.value * self.exchange_rate
+
+
+@dataclass
 class HMRCMatchRecord:
     """Record of whether part or all of the transaction belongs to same day/
     bed and breakfast or section 104"""
@@ -90,11 +103,9 @@ class Transaction:
 class Dividend(Transaction):
     """Dataclass to store dividend information"""
 
-    value: Decimal
+    value: Money
     country: str
     description: str = field(kw_only=True, default="")
-    currency: Currency = field(kw_only=True, default=Currency("GBP"))
-    exchange_rate: Decimal = field(kw_only=True, default=Decimal(1))
 
 
 @dataclass
@@ -107,11 +118,9 @@ class Trade(Transaction):
     """
 
     size: Decimal  # for fractional shares
-    transaction_value: Decimal
+    transaction_value: Money
     match_status: HMRCMatchStatus = field(init=False)
     fee_and_tax: Decimal = field(kw_only=True, default=Decimal(0))
-    currency: Currency = field(kw_only=True, default=Currency("GBP"))
-    exchange_rate: Decimal = field(kw_only=True, default=Decimal(1))
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -119,7 +128,7 @@ class Trade(Transaction):
 
     def get_partial_value(self, qty: Decimal) -> Decimal:
         """return the value for partial share matching for this transaction"""
-        return qty * self.transaction_value / self.size
+        return qty * self.transaction_value.get_value() / self.size
 
 
 @dataclass

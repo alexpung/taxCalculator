@@ -6,7 +6,7 @@ import unittest
 
 from capital_gain.calculator import CgtCalculator
 from capital_gain.exception import MixedTickerError
-from capital_gain.model import MatchType, Trade, TransactionType
+from capital_gain.model import MatchType, Money, Trade, TransactionType
 
 
 class TestCalculator(unittest.TestCase):
@@ -40,14 +40,14 @@ class TestCalculator(unittest.TestCase):
                 datetime.date(2021, 10, 5),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.SELL,
                 Decimal(150),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
         ]
         test = CgtCalculator(trades)
@@ -68,21 +68,21 @@ class TestCalculator(unittest.TestCase):
                 datetime.date(2021, 10, 5),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
             Trade(
                 "JMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
         ]
         self.assertRaises(MixedTickerError, CgtCalculator, trades)
@@ -98,21 +98,21 @@ class TestCalculator(unittest.TestCase):
                 datetime.date(2021, 10, 5),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.BUY,
                 Decimal(110),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(12000),
+                Money(Decimal(12000)),
             ),
         ]
         try:
@@ -132,42 +132,42 @@ class TestCalculator(unittest.TestCase):
                 datetime.date(2021, 10, 5),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.BUY,
                 Decimal(110),
-                Decimal(12100),
+                Money(Decimal(12100)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 7),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(12000),
+                Money(Decimal(12000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 7),
                 TransactionType.SELL,
                 Decimal(150),
-                Decimal(19500),
+                Money(Decimal(19500)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 7),
                 TransactionType.BUY,
                 Decimal(20),
-                Decimal(2800),
+                Money(Decimal(2800)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 8),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(15000),
+                Money(Decimal(15000)),
             ),
         ]
         test = CgtCalculator(trades)
@@ -212,56 +212,56 @@ class TestCalculator(unittest.TestCase):
                 datetime.date(2021, 10, 5),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 6),
                 TransactionType.SELL,
                 Decimal(50),
-                Decimal(5000),
+                Money(Decimal(5000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 11, 5),
                 TransactionType.BUY,
                 Decimal(40),
-                Decimal(3200),
+                Money(Decimal(3200)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 11, 6),
                 TransactionType.BUY,
                 Decimal(30),
-                Decimal(3300),
+                Money(Decimal(3300)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 11, 7),
                 TransactionType.SELL,
                 Decimal(15),
-                Decimal(2400),
+                Money(Decimal(2400)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 12, 6),
                 TransactionType.BUY,
                 Decimal(10),
-                Decimal(1300),
+                Money(Decimal(1300)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 12, 7),
                 TransactionType.BUY,
                 Decimal(10),
-                Decimal(1400),
+                Money(Decimal(1400)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 12, 8),
                 TransactionType.BUY,
                 Decimal(10),
-                Decimal(1500),
+                Money(Decimal(1500)),
             ),
         ]
         test = CgtCalculator(trades)
@@ -312,42 +312,42 @@ class TestCalculator(unittest.TestCase):
                 datetime.date(2021, 1, 5),
                 TransactionType.BUY,
                 Decimal(100),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2022, 12, 6),
                 TransactionType.SELL,
                 Decimal(50),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 12, 8),
                 TransactionType.BUY,
                 Decimal(20),
-                Decimal(12000),
+                Money(Decimal(12000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 11, 6),
                 TransactionType.BUY,
                 Decimal(30),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2021, 12, 7),
                 TransactionType.SELL,
                 Decimal(10),
-                Decimal(10000),
+                Money(Decimal(10000)),
             ),
             Trade(
                 "AMD",
                 datetime.date(2020, 12, 7),
                 TransactionType.BUY,
                 Decimal(10),
-                Decimal(12000),
+                Money(Decimal(12000)),
             ),
         ]
         test = CgtCalculator(trades)
@@ -391,28 +391,28 @@ class TestCalculator(unittest.TestCase):
                 datetime.date(2014, 4, 1),
                 TransactionType.BUY,
                 Decimal(1000),
-                Decimal(4150),  # £4*1000 + £150
+                Money(Decimal(4150)),  # £4*1000 + £150
             ),
             Trade(
                 "Lobster plc",
                 datetime.date(2017, 9, 1),
                 TransactionType.BUY,
                 Decimal(500),
-                Decimal(2130),  # £4.1*500 + £80
+                Money(Decimal(2130)),  # £4.1*500 + £80
             ),
             Trade(
                 "Lobster plc",
                 datetime.date(2020, 5, 1),
                 TransactionType.SELL,
                 Decimal(700),
-                Decimal(3260),  # £3360 - £100
+                Money(Decimal(3260)),  # £3360 - £100
             ),
             Trade(
                 "Lobster plc",
                 datetime.date(2021, 2, 1),
                 TransactionType.SELL,
                 Decimal(400),
-                Decimal(1975),  # £2080 - £105
+                Money(Decimal(1975)),  # £2080 - £105
             ),
         ]
         test = CgtCalculator(trades)
