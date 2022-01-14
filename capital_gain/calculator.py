@@ -41,6 +41,8 @@ class CgtCalculator:
             buy_transaction.match_status.unmatched,
             sell_transaction.match_status.unmatched,
         )
+        if to_match == 0:
+            return
         proceeds = sell_transaction.get_partial_value(to_match)
         cost = buy_transaction.get_partial_value(to_match)
         capital_gain = proceeds - cost
@@ -111,6 +113,8 @@ class CgtCalculator:
                 matchable_shares = min(
                     transaction.match_status.unmatched, self.section104.quantity
                 )
+                if matchable_shares == 0:
+                    return
                 transaction.match_status.match(
                     matchable_shares, None, MatchType.SECTION104
                 )
