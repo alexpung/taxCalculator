@@ -133,9 +133,21 @@ class Trade(Transaction):
     def get_partial_value(self, qty: Decimal) -> Decimal:
         """return the value for partial share matching for this transaction"""
         net_value = self.transaction_value.get_value() + sum(
-            fee.value for fee in self.fee_and_tax
+            fee.get_value() for fee in self.fee_and_tax
         )
         return net_value * qty / self.size
+
+    def get_tuple_repr(self) -> Tuple[str, ...]:
+        """Return Tuple representation of the transaction"""
+        return (
+            str(self.transaction_id),
+            str(self.ticker),
+            str(self.transaction_type.value),
+            str(self.size),
+            str(self.transaction_value.get_value()),
+            str(sum(fee.get_value() for fee in self.fee_and_tax)),
+            str(self.match_status.total_gain),
+        )
 
 
 @dataclass
