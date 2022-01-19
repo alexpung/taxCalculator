@@ -142,11 +142,12 @@ class Trade(Transaction):
         return (
             str(self.transaction_id),
             str(self.ticker),
+            str(self.transaction_date.strftime("%d %b %Y")),
             str(self.transaction_type.value),
-            str(self.size),
-            str(self.transaction_value.get_value()),
-            str(sum(fee.get_value() for fee in self.fee_and_tax)),
-            str(self.match_status.total_gain),
+            f"{self.size:2f}",
+            f"{self.transaction_value.get_value():.2f}",
+            f"{sum(fee.get_value() for fee in self.fee_and_tax):.2f}",
+            f"{self.match_status.total_gain:.2f}",
         )
 
 
