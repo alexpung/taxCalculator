@@ -45,6 +45,17 @@ class Money:
         """return transaction value in GBP"""
         return self.value * self.exchange_rate
 
+    def __str__(self) -> str:
+        if self.note:
+            prefix = f"{self.note}: "
+        else:
+            prefix = ""
+        return (
+            prefix + f"{self.currency.code}{self.value:.2f}"
+            f"with exchange rate {self.exchange_rate}\n"
+            f"Converted to £{self.get_value():.2f}\n"
+        )
+
 
 @dataclass
 class HMRCMatchRecord:
@@ -144,10 +155,34 @@ class Trade(Transaction):
             str(self.ticker),
             str(self.transaction_date.strftime("%d %b %Y")),
             str(self.transaction_type.value),
-            f"{self.size:2f}",
+            f"{self.size:.2f}",
             f"{self.transaction_value.get_value():.2f}",
             f"{sum(fee.get_value() for fee in self.fee_and_tax):.2f}",
             f"{self.match_status.total_gain:.2f}",
+        )
+
+    def __str__(self) -> str:
+        fee_string = ""
+        for fee in self.fee_and_tax:
+            fee_string += str(fee)
+        short_share = (
+            f"Short shares that are unmatched: {self.match_status.unmatched}\n"
+            if self.match_status.unmatched
+            else ""
+        )
+
+        return (
+            f"Symbol: {self.ticker}\n"
+            f"Trade Date: {self.transaction_date.strftime('%d %b %Y')}\n"
+            f"Transaction Type: {self.transaction_type.value}\n"
+            f"Quantity: {self.size:2f}\n"
+            f"Gross trade value:\n"
+            f"{self.transaction_value}"
+            f"\nTotal incidental cost: "
+            f"{sum(fee.get_value() for fee in self.fee_and_tax):.2f}\n"
+            f"{fee_string}"
+            f"{short_share}"
+            f"{self.match_status.comment}"
         )
 
 
