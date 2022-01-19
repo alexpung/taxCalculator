@@ -1,7 +1,6 @@
 """ statement importing for interactive brokers """
 from datetime import datetime
 from decimal import Decimal
-import glob
 import xml.etree.ElementTree as ET
 
 from iso3166 import countries
@@ -96,28 +95,24 @@ def transform_trade(xml_entry: ET.Element) -> Trade:
     )
 
 
-def parse_dividend(path: str) -> list[Dividend]:
+def parse_dividend(file: str) -> list[Dividend]:
     """Parse xml to extract Dividend objects"""
-    dividend_list: list[ET.Element] = []
     dividend_type = [
         TransactionType.DIVIDEND,
         TransactionType.DIVIDEND_IN_LIEU,
         TransactionType.WITHHOLDING,
     ]
-    for file in glob.glob(path + "/*.xml"):
-        tree = ET.parse(file)
-        test = tree.findall(".//CashTransaction")
-        dividend_list += [
-            x for x in test if x.attrib["type"] in [x.value for x in dividend_type]
-        ]
+    tree = ET.parse(file)
+    test = tree.findall(".//CashTransaction")
+    dividend_list = [
+        x for x in test if x.attrib["type"] in [x.value for x in dividend_type]
+    ]
     return [transform_dividend(dividend) for dividend in dividend_list]
 
 
-def parse_trade(path: str) -> list[Trade]:
+def parse_trade(file: str) -> list[Trade]:
     """Parse xml to extract Trade objects"""
-    trade_list: list[ET.Element] = []
-    for file in glob.glob(path + "/*.xml"):
-        tree = ET.parse(file)
-        test = tree.findall(".//Trades/Order")
-        trade_list += [x for x in test if x.attrib["assetCategory"] == "STK"]
+    tree = ET.parse(file)
+    test = tree.findall(".//Trades/Order")
+    trade_list = [x for x in test if x.attrib["assetCategory"] == "STK"]
     return [transform_trade(trade) for trade in trade_list]
