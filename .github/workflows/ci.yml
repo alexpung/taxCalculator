@@ -38,7 +38,9 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
+        run: |
+          sudo apt install libglew-dev
+          poetry install --no-interaction --no-root
       #----------------------------------------------
       # run pylint
       #----------------------------------------------
