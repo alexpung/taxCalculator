@@ -1,0 +1,100 @@
+<ItemDrawer>:
+    IconLeftWidget:
+        id: icon
+        icon: root.icon
+        text_color: root.text_color
+
+
+<ContentNavigationDrawer@MDBoxLayout>:
+    orientation: "vertical"
+    padding: "8dp"
+    spacing: "8dp"
+
+    AnchorLayout:
+        anchor_x: "left"
+        size_hint_y: None
+
+    MDLabel:
+        text: "UK investment tax calculator"
+        font_style: "Button"
+        adaptive_height: True
+
+    MDLabel:
+        text: "https://github.com/alexpung/taxCalculator"
+        font_style: "Caption"
+        adaptive_height: True
+
+    ScrollView:
+
+        MDList:
+
+            ItemDrawer:
+                icon: "chart-line"
+                text: "Capital gain"
+            ItemDrawer:
+                icon: "cash-multiple"
+                text: "Dividend and interest"
+            ItemDrawer:
+                icon: "cog"
+                text: "Settings"
+            ItemDrawer:
+                icon: "information-outline"
+                text: "Licenses and About"
+
+
+
+
+
+MDNavigationLayout:
+
+    ScreenManager:
+
+        MDScreen:
+
+            MDBoxLayout:
+                orientation: 'vertical'
+
+                MDToolbar:
+                    title: "UK tax calculator"
+                    elevation: 10
+                    left_action_items: [['menu', lambda x: nav_drawer.set_state("open")]]
+
+                MDGridLayout:
+                    cols: 2
+                    MDBoxLayout:
+                        size_hint:(0.2, 0.2)
+                        MDLabel:
+                            text: "Import/Export Control"
+                        MDRaisedButton:
+                            text: "Import file"
+                            text_color: 0, 0, 1, 1
+                            on_release: app.select_file()
+                        MDRaisedButton:
+                            text: "Import folder"
+                            text_color: 0, 0, 1, 1
+                            on_release: app.select_directory()
+                    MDBoxLayout:
+                        size_hint:(0.8, 0.2)
+                        MDLabel:
+                            text: "Capital gain summary"
+                    MDBoxLayout:
+                        size_hint:(0.2, 0.8)
+                        orientation: 'vertical'
+                        MDLabel:
+                            text: "Selected Trade Calculation detail:"
+                            size_hint:(1, 0.1)
+                        CalculationDetailLabel:
+                            size_hint:(1, 0.9)
+                    TableLayout:
+                        orientation: 'vertical'
+                        size_hint:(0.2, 0.8)
+                MDList:
+                    OneLineListItem:
+                        text: "testing log"
+
+
+    MDNavigationDrawer:
+        id: nav_drawer
+
+        ContentNavigationDrawer:
+            id: content_drawer
