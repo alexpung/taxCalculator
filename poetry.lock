@@ -201,7 +201,7 @@ python-versions = ">= 3.6"
 
 [[package]]
 name = "iso4217"
-version = "1.7.20211001"
+version = "1.8.20211001"
 description = "ISO 4217 currency data package for Python"
 category = "main"
 optional = false
@@ -241,7 +241,7 @@ pypiwin32 = {version = "*", markers = "sys_platform == \"win32\""}
 [package.extras]
 angle = ["kivy-deps.angle (>=0.3.1,<0.4.0)"]
 base = ["pillow", "docutils", "pygments", "kivy-deps.angle (>=0.3.1,<0.4.0)", "kivy-deps.sdl2 (>=0.4.4,<0.5.0)", "kivy-deps.glew (>=0.3.0,<0.4.0)", "pypiwin32"]
-dev = ["pytest (>=3.6)", "pytest-cov", "pytest-asyncio (!=0.11.0)", "pytest-timeout", "pytest-benchmark", "pyinstaller", "sphinx", "sphinxcontrib-blockdiag", "sphinxcontrib-seqdiag", "sphinxcontrib-actdiag", "sphinxcontrib-nwdiag", "funcparserlib (==1.0.0a0)", "flake8", "pre-commit", "kivy-deps.gstreamer-dev (>=0.3.3,<0.4.0)", "kivy-deps.sdl2-dev (>=0.4.4,<0.5.0)", "kivy-deps.glew-dev (>=0.3.0,<0.4.0)"]
+dev = ["pytest (>=3.6)", "pytest-cov", "pytest-asyncio (!=0.11.0)", "pytest-timeout", "pytest-benchmark", "PyInstaller @ https://github.com/pyinstaller/pyinstaller/archive/develop.zip", "sphinx", "sphinxcontrib-blockdiag", "sphinxcontrib-seqdiag", "sphinxcontrib-actdiag", "sphinxcontrib-nwdiag", "funcparserlib (==1.0.0a0)", "flake8", "pre-commit", "kivy-deps.gstreamer-dev (>=0.3.3,<0.4.0)", "kivy-deps.sdl2-dev (>=0.4.4,<0.5.0)", "kivy-deps.glew-dev (>=0.3.0,<0.4.0)"]
 full = ["pillow", "docutils", "pygments", "ffpyplayer", "kivy-deps.gstreamer (>=0.3.3,<0.4.0)", "kivy-deps.angle (>=0.3.1,<0.4.0)", "kivy-deps.sdl2 (>=0.4.4,<0.5.0)", "kivy-deps.glew (>=0.3.0,<0.4.0)", "pypiwin32"]
 glew = ["kivy-deps.glew (>=0.3.0,<0.4.0)"]
 gstreamer = ["kivy-deps.gstreamer (>=0.3.3,<0.4.0)"]
@@ -252,7 +252,6 @@ tuio = ["oscpy"]
 [package.source]
 type = "url"
 url = "https://github.com/kivy/kivy/archive/master.zip"
-
 [[package]]
 name = "kivy-deps.angle"
 version = "0.3.1"
@@ -383,14 +382,14 @@ et-xmlfile = "*"
 
 [[package]]
 name = "packaging"
-version = "20.9"
+version = "21.3"
 description = "Core utilities for Python packages"
 category = "dev"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+python-versions = ">=3.6"
 
 [package.dependencies]
-pyparsing = ">=2.0.2"
+pyparsing = ">=2.0.2,<3.0.5 || >3.0.5"
 
 [[package]]
 name = "pathspec"
@@ -434,7 +433,7 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pre-commit"
-version = "2.16.0"
+version = "2.17.0"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
 category = "dev"
 optional = false
@@ -772,8 +771,8 @@ iso3166 = [
     {file = "iso3166-2.0.2.tar.gz", hash = "sha256:04d02cfcfc18a6f8a9a4edb4d0a55e2e4fc575626c29d702f750de415e88d372"},
 ]
 iso4217 = [
-    {file = "iso4217-1.7.20211001-py2.py3-none-any.whl", hash = "sha256:346735c9ec7f8c737857fc70a613ffcb97cdeaa7a149cb168080b3619b722ccc"},
-    {file = "iso4217-1.7.20211001.tar.gz", hash = "sha256:4e59fed74ae06c4263daa7db1982075cb8aa6c8ea0bc44f81d30607025eab9e5"},
+    {file = "iso4217-1.8.20211001-py2.py3-none-any.whl", hash = "sha256:4aeb9558e7377d5a5f97f39e1965a05c04245b61a2f977d2b8937c23aef68301"},
+    {file = "iso4217-1.8.20211001.tar.gz", hash = "sha256:69d73889707f8a2c3d988b7b5d5aa75712ae6b2b65cf2660b1effe95feda22c2"},
 ]
 isort = [
     {file = "isort-5.10.1-py3-none-any.whl", hash = "sha256:6f62d78e2f89b4500b080fe3a81690850cd254227f27f75c3a0c491a1f351ba7"},
@@ -957,8 +956,8 @@ openpyxl = [
     {file = "openpyxl-3.0.9.tar.gz", hash = "sha256:40f568b9829bf9e446acfffce30250ac1fa39035124d55fc024025c41481c90f"},
 ]
 packaging = [
-    {file = "packaging-20.9-py2.py3-none-any.whl", hash = "sha256:67714da7f7bc052e064859c05c595155bd1ee9f69f76557e21f051443c20947a"},
-    {file = "packaging-20.9.tar.gz", hash = "sha256:5b327ac1320dc863dca72f4514ecc086f31186744b84a230374cc1fd776feae5"},
+    {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
+    {file = "packaging-21.3.tar.gz", hash = "sha256:dd47c42927d89ab911e606518907cc2d3a1f38bbd026385970643f9c5b8ecfeb"},
 ]
 pathspec = [
     {file = "pathspec-0.9.0-py2.py3-none-any.whl", hash = "sha256:7d15c4ddb0b5c802d161efc417ec1a2558ea2653c2e8ad9c19098201dc1c993a"},
@@ -1007,8 +1006,8 @@ pluggy = [
     {file = "pluggy-1.0.0.tar.gz", hash = "sha256:4224373bacce55f955a878bf9cfa763c1e360858e330072059e10bad68531159"},
 ]
 pre-commit = [
-    {file = "pre_commit-2.16.0-py2.py3-none-any.whl", hash = "sha256:758d1dc9b62c2ed8881585c254976d66eae0889919ab9b859064fc2fe3c7743e"},
-    {file = "pre_commit-2.16.0.tar.gz", hash = "sha256:fe9897cac830aa7164dbd02a4e7b90cae49630451ce88464bca73db486ba9f65"},
+    {file = "pre_commit-2.17.0-py2.py3-none-any.whl", hash = "sha256:725fa7459782d7bec5ead072810e47351de01709be838c2ce1726b9591dad616"},
+    {file = "pre_commit-2.17.0.tar.gz", hash = "sha256:c1a8040ff15ad3d648c70cc3e55b93e4d2d5b687320955505587fd79bbaed06a"},
 ]
 py = [
     {file = "py-1.11.0-py2.py3-none-any.whl", hash = "sha256:607c53218732647dff4acdfcd50cb62615cedf612e72d1724fb1a0cc6405b378"},
