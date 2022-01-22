@@ -43,7 +43,17 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pylint.format]
-max-line-length = 88
+max-line-length = 5
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+    "no-else-break",
+    "no-else-continue",
+    "no-else-raise",
+    "no-else-return",
+    "fixme",
+    "too-many-ancestors"
+]
 
 [tool.isort]
 profile = "black"
