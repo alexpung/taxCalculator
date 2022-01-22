@@ -1,13 +1,15 @@
 """ Prototype UI for the App """
 from collections import defaultdict
+import datetime
 from glob import glob
 from tkinter import Tk, filedialog
-from typing import Any, List
+from typing import Any, List, Tuple
 
 from kivy.config import Config
 from kivy.lang import Builder
 from kivy.metrics import dp
 
+# pylint bug, disable checking kivy.properties
 # pylint: disable=no-name-in-module
 from kivy.properties import ListProperty, StringProperty
 from kivymd.app import MDApp
@@ -23,6 +25,38 @@ from statement_parser.ibkr import parse_dividend, parse_trade
 Config.set("input", "mouse", "mouse,multitouch_on_demand")
 
 
+# pylint: disable=too-many-ancestors
+class TaxYearWidget(MDBoxLayout):
+    """Layout containing the control of tax year selection"""
+
+    tax_year = StringProperty()
+    """ To control the display of the tax year """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.tax_year = str(datetime.datetime.now().year)
+        self.start_date, self.end_date = self.get_tax_year_date(int(self.tax_year))
+
+    def on_press_left(self):
+        """left button pressed: subtract a year"""
+        if self.tax_year == "Custom":
+            self.tax_year = str(datetime.datetime.now().year)
+        else:
+            self.tax_year = str(int(self.tax_year) - 1)
+
+    def on_press_right(self):
+        """right button pressed: add a year"""
+        if self.tax_year == "Custom":
+            self.tax_year = str(datetime.datetime.now().year)
+        else:
+            self.tax_year = str(int(self.tax_year) + 1)
+
+    @staticmethod
+    def get_tax_year_date(year: int) -> Tuple[datetime.date, ...]:
+        """helper function to get start and end date of tax year"""
+        return datetime.date(year, 4, 6), datetime.date(year + 1, 4, 5)
+
+
 class CalculatorControl:
     """Control functions for the app"""
 
@@ -34,6 +68,7 @@ class CalculatorControl:
     def calculate(self) -> None:
         """invoke calculation of capital gain"""
         trade_bucket = defaultdict(list)
+        # put trades with the same symbol together and calculate tax
         for trade in self.trades:
             trade_bucket[trade.ticker].append(trade)
         for _, trade_list in trade_bucket.items():
@@ -98,7 +133,10 @@ class DataTable(MDDataTable):
 
 
 class TableLayout(MDBoxLayout):
-    """class for drawing the data table area"""
+    """class for drawing the data table area
+    Unfortunately Datatable cannot be initialized in .kv file so
+    it is created in python and added here.
+    """
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
