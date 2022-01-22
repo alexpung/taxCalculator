@@ -25,7 +25,6 @@ from statement_parser.ibkr import parse_dividend, parse_trade
 Config.set("input", "mouse", "mouse,multitouch_on_demand")
 
 
-# pylint: disable=too-many-ancestors
 class TaxYearWidget(MDBoxLayout):
     """Layout containing the control of tax year selection"""
 
