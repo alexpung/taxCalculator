@@ -1,6 +1,7 @@
 """ Class model to match capital gain transactions """
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import datetime
 from decimal import Decimal
@@ -90,8 +91,9 @@ class HMRCMatchStatus:
             self.unmatched -= size
 
 
-@dataclass
-class Transaction:
+# mypy false positive https://github.com/python/mypy/issues/5374 so ignore
+@dataclass  # type:ignore
+class Transaction(ABC):
     """base class for all transactions"""
 
     ticker: str
@@ -110,6 +112,15 @@ class Transaction:
     def __gt__(self, other: Trade) -> bool:
         return self.transaction_date > other.transaction_date
 
+    @abstractmethod
+    def get_table_repr(self):
+        """subclass should return a row representation for displaying in a table"""
+
+    @property
+    @abstractmethod
+    def table_header(self):
+        """subclass should show the header when displaying in a table"""
+
 
 @dataclass
 class Dividend(Transaction):
@@ -118,6 +129,29 @@ class Dividend(Transaction):
     value: Money
     country: str
     description: str = field(default="")
+    table_header = [
+        "ticker",
+        "description",
+        "transaction date",
+        "value",
+        "currency",
+        "exchange rate",
+        "value in sterling",
+        "country",
+    ]
+
+    def get_table_repr(self):
+        """return data to display in the table"""
+        return (
+            self.ticker,
+            self.description,
+            self.transaction_date,
+            self.value.value,
+            self.value.currency,
+            self.value.exchange_rate,
+            self.value.get_value(),
+            self.country,
+        )
 
 
 @dataclass
@@ -136,6 +170,16 @@ class Trade(Transaction):
     transaction_value: Money
     match_status: HMRCMatchStatus = field(init=False)
     fee_and_tax: list[Money] = field(default_factory=list)
+    table_header: ClassVar = [
+        "ID",
+        "Symbol",
+        "Transaction Date",
+        "Transaction Type",
+        "Quantity",
+        "Gross Value",
+        "Allowable fees and Taxes",
+        "Capital gain (loss)",
+    ]
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -148,7 +192,7 @@ class Trade(Transaction):
         )
         return net_value * qty / self.size
 
-    def get_tuple_repr(self) -> Tuple[str, ...]:
+    def get_table_repr(self) -> Tuple[str, ...]:
         """Return Tuple representation of the transaction"""
         return (
             str(self.transaction_id),

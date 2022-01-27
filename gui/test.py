@@ -7,7 +7,6 @@ from typing import Any, Final, List, Tuple
 
 from kivy.config import Config
 from kivy.lang import Builder
-from kivy.metrics import dp
 
 # pylint bug, disable checking kivy.properties
 # pylint: disable=no-name-in-module
@@ -22,6 +21,7 @@ from kivymd.uix.pickers import MDDatePicker
 
 from capital_gain.calculator import CgtCalculator
 from capital_gain.model import Dividend, Section104, Trade
+from gui.table_display import convert_table_header
 from statement_parser.ibkr import parse_dividend, parse_trade
 
 # pylint bug, disable checking kivy.properties
@@ -87,16 +87,7 @@ class TableLayout(MDBoxLayout):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        column_data = [
-            ("ID", dp(30)),
-            ("Symbol", dp(30)),
-            ("Transaction Date", dp(30)),
-            ("Transaction Type", dp(30)),
-            ("Quantity", dp(30)),
-            ("Gross Value", dp(30)),
-            ("Allowable fees and Taxes", dp(30)),
-            ("Capital gain (loss)", dp(30)),
-        ]
+        column_data = convert_table_header(Trade.table_header, 30)
         self.table = MDDataTable(
             use_pagination=True, rows_num=10, column_data=column_data
         )
@@ -159,7 +150,7 @@ class CalculatorApp(MDApp):
                 self.section104.append(section104_single)
         # sort the results and put it in the table
         self.trades = sorted(self.trades, key=lambda x: (x.ticker, x.transaction_date))
-        self.trade_table_data = [trade.get_tuple_repr() for trade in self.trades]
+        self.trade_table_data = [trade.get_table_repr() for trade in self.trades]
 
     def import_file(self, file: str) -> None:
         """Import a single file"""
