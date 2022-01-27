@@ -105,6 +105,7 @@ MDNavigationLayout:
                         MDBoxLayout:
                             orientation: 'vertical'
                             TaxYearWidget:
+                                on_date_range: app.update_table(args[1])
                             MDLabel:
                                 text: "Import/Export Control"
                             MDRaisedButton:

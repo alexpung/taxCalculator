@@ -2,6 +2,7 @@
 from collections import defaultdict
 import datetime
 from glob import glob
+import re
 from tkinter import Tk, filedialog
 from typing import Any, Final, List, Tuple
 
@@ -10,7 +11,7 @@ from kivy.lang import Builder
 
 # pylint bug, disable checking kivy.properties
 # pylint: disable=no-name-in-module
-from kivy.properties import ListProperty, StringProperty
+from kivy.properties import ListProperty, ObjectProperty, StringProperty
 from kivymd.app import MDApp
 from kivymd.toast import toast
 from kivymd.uix.boxlayout import MDBoxLayout
@@ -21,7 +22,7 @@ from kivymd.uix.pickers import MDDatePicker
 
 from capital_gain.calculator import CgtCalculator
 from capital_gain.model import Dividend, Section104, Trade
-from gui.table_display import convert_table_header
+from gui.table_display import convert_table_header, get_colored_table_row
 from statement_parser.ibkr import parse_dividend, parse_trade
 
 # pylint bug, disable checking kivy.properties
@@ -34,13 +35,17 @@ class TaxYearWidget(MDBoxLayout):
     """Layout containing the control of tax year selection"""
 
     tax_year = StringProperty()
+    date_range = ObjectProperty()
     LABEL_CUSTOM: Final[str] = "Custom"
     """ To control the display of the tax year """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.tax_year = str(datetime.datetime.now().year)
-        self.start_date, self.end_date = self.get_tax_year_date(int(self.tax_year))
+        self.tax_year = str(datetime.datetime.now().year - 1)
+        self.date_range = self.get_tax_year_date(int(self.tax_year))
+        app = MDApp.get_running_app()
+        # Initialize here so the main app know the default tax date range
+        (app.tax_start_date, app.tax_end_date) = self.date_range
 
     def on_press_left(self):
         """left button pressed: subtract a year"""
@@ -48,6 +53,7 @@ class TaxYearWidget(MDBoxLayout):
             self.tax_year = str(datetime.datetime.now().year)
         else:
             self.tax_year = str(int(self.tax_year) - 1)
+        self.date_range = self.get_tax_year_date(int(self.tax_year))
 
     def on_press_right(self):
         """right button pressed: add a year"""
@@ -55,6 +61,7 @@ class TaxYearWidget(MDBoxLayout):
             self.tax_year = str(datetime.datetime.now().year)
         else:
             self.tax_year = str(int(self.tax_year) + 1)
+        self.date_range = self.get_tax_year_date(int(self.tax_year))
 
     @staticmethod
     def get_tax_year_date(year: int) -> Tuple[datetime.date, ...]:
@@ -66,10 +73,7 @@ class TaxYearWidget(MDBoxLayout):
         if len(date_range) < 2:
             toast("Please select a valid date range with start and end date")
         else:
-            self.start_date = date_range[0]
-            print(self.start_date)
-            self.end_date = date_range[-1]
-            print(self.end_date)
+            self.date_range = (date_range[0], date_range[-1])
             self.tax_year = self.LABEL_CUSTOM
 
     def show_date_picker(self):
@@ -150,7 +154,7 @@ class CalculatorApp(MDApp):
                 self.section104.append(section104_single)
         # sort the results and put it in the table
         self.trades = sorted(self.trades, key=lambda x: (x.ticker, x.transaction_date))
-        self.trade_table_data = [trade.get_table_repr() for trade in self.trades]
+        self.update_table((self.tax_start_date, self.tax_end_date))
 
     def import_file(self, file: str) -> None:
         """Import a single file"""
@@ -165,9 +169,17 @@ class CalculatorApp(MDApp):
     def on_row_press(self, _, instance_row) -> None:
         """Called when a table row is clicked."""
         start_index, _ = instance_row.table.recycle_data[instance_row.index]["range"]
-        index = int(instance_row.table.recycle_data[start_index]["text"])
+        cell = instance_row.table.recycle_data[start_index]["text"]
+        index = int(re.sub("[[].*?[]]", "", cell))
         self.trade_description = str(
             next(trade for trade in self.trades if trade.transaction_id == index)
+        )
+
+    def update_table(self, date_range: Tuple[datetime.date, datetime.date]) -> None:
+        """called when the data table needs to be updated"""
+        (self.tax_start_date, self.tax_end_date) = date_range
+        self.trade_table_data = get_colored_table_row(
+            list(self.trades), self.tax_start_date, self.tax_end_date
         )
 
 
