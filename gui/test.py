@@ -114,10 +114,10 @@ class CalculatorApp(MDApp):
 
     trade_description = StringProperty()
     trade_table_data = ListProperty()
+    trades = ListProperty()
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.trades: List[Trade] = []
         self.dividends: List[Dividend] = []
         self.section104: List[Section104] = []
 
@@ -142,8 +142,8 @@ class CalculatorApp(MDApp):
 
     def calculate(self, file: str) -> None:
         """invoke calculation of capital gain"""
-        self.trades += parse_trade(file)
-        self.dividends += parse_dividend(file)
+        self.trades.extend(parse_trade(file))
+        self.dividends.extend(parse_dividend(file))
         trade_bucket = defaultdict(list)
         # put trades with the same symbol together and calculate tax
         for trade in self.trades:
