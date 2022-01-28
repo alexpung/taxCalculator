@@ -46,6 +46,9 @@ class CgtCalculator:
         buy_cost = buy_transaction.get_partial_value(to_match)
         trade_cost_buy = buy_transaction.get_partial_fee(to_match)
         trade_cost_sell = sell_transaction.get_partial_fee(to_match)
+        sell_transaction.match_status.allowable_cost += (
+            buy_cost + trade_cost_buy + trade_cost_sell
+        )
         capital_gain = proceeds - buy_cost - trade_cost_buy - trade_cost_sell
         sell_transaction.match_status.total_gain += capital_gain
         sell_transaction.match_status.comment += comments.capital_gain_calc(
@@ -135,6 +138,9 @@ class CgtCalculator:
                     proceeds - buy_cost - transaction.get_partial_fee(matchable_shares)
                 )
                 transaction.match_status.total_gain += capital_gain
+                transaction.match_status.allowable_cost += (
+                    buy_cost + transaction.get_partial_fee(matchable_shares)
+                )
                 comment = (
                     comments.capital_gain_calc(
                         None,

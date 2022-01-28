@@ -76,6 +76,7 @@ class HMRCMatchStatus:
     record: list[HMRCMatchRecord] = field(default_factory=list)
     comment: str = ""
     total_gain: Decimal = Decimal(0)
+    allowable_cost: Decimal = Decimal(0)
 
     def match(
         self,
