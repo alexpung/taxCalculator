@@ -98,11 +98,21 @@ MDNavigationLayout:
 
                 MDBoxLayout:
                     size_hint: (1, 0.9)
-                    orientation: 'vertical'
                     MDBoxLayout:
-                        size_hint: (1, 0.25)
+                        size_hint: (0.25, 1)
+                        MDBoxLayout:
+                            orientation: 'vertical'
+                            MDLabel:
+                                text: "Selected Trade Calculation detail:"
+                            MDLabel:
+                                text: app.trade_description
+                            CapitalGainSummaryLabel:
+
+                    MDBoxLayout:
+                        size_hint: (0.75, 1)
                         orientation: 'vertical'
                         MDBoxLayout:
+                            size_hint: (1, 0.25)
                             orientation: 'vertical'
                             TaxYearWidget:
                             MDLabel:
@@ -115,19 +125,8 @@ MDNavigationLayout:
                                 text: "Import folder"
                                 text_color: 0, 0, 1, 1
                                 on_release: app.select_directory()
-                    MDBoxLayout:
-                        size_hint: (1, 0.75)
-                        MDBoxLayout:
-                            size_hint: (0.25, 1)
-                            orientation: 'vertical'
-                            MDLabel:
-                                text: "Selected Trade Calculation detail:"
-                            MDLabel:
-                                text: app.trade_description
-                            MDLabel:
-                                text: "Capital gain summary"
                         TableLayout:
-                            size_hint: (0.75, 1)
+                            size_hint: (1, 0.75)
                             orientation: 'vertical'
 
 

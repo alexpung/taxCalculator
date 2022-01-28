@@ -23,6 +23,13 @@ from kivymd.uix.pickers import MDDatePicker
 
 from capital_gain.calculator import CgtCalculator
 from capital_gain.model import Dividend, Section104, Trade
+from capital_gain.summary import (
+    allowable_cost,
+    capital_loss,
+    disposal_proceeds,
+    number_of_disposal,
+    total_gain_exclude_loss,
+)
 from gui.table_display import convert_table_header, get_colored_table_row
 from statement_parser.ibkr import parse_dividend, parse_trade
 
@@ -40,16 +47,59 @@ class Daterange:
     end_date: datetime.date
 
 
-class CapitalGainSummaryWidget(MDBoxLayout):
+class CapitalGainSummaryLabel(MDLabel):
     """Layout for showing capital gain summary"""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        app = MDApp.get_running_app()
-        app.bind(trades=self.calculate_summary)
+        self.disposal_proceeds = None
+        self.allowable_cost = None
+        self.total_gain = None
+        self.capital_loss = None
+        self.number_of_disposal: int = 0
+        self.app = MDApp.get_running_app()
+        self.app.bind(trades=self.calculate_summary)
+        self.app.bind(date_range=self.calculate_summary)
 
-    def calculate_summary(self):
+    def calculate_summary(self, *_args):
         """To calculate the capital gain tax summary"""
+        self.number_of_disposal = number_of_disposal(
+            self.app.trades,
+            self.app.date_range.start_date,
+            self.app.date_range.end_date,
+        )
+        self.disposal_proceeds = disposal_proceeds(
+            self.app.trades,
+            self.app.date_range.start_date,
+            self.app.date_range.end_date,
+        )
+        self.allowable_cost = allowable_cost(
+            self.app.trades,
+            self.app.date_range.start_date,
+            self.app.date_range.end_date,
+        )
+        self.total_gain = total_gain_exclude_loss(
+            self.app.trades,
+            self.app.date_range.start_date,
+            self.app.date_range.end_date,
+        )
+        self.capital_loss = capital_loss(
+            self.app.trades,
+            self.app.date_range.start_date,
+            self.app.date_range.end_date,
+        )
+        self.text = self.show_text()
+
+    def show_text(self):
+        """Show capital gain summary in the app"""
+        return (
+            "Capital gain summary:\n"
+            f"Number of disposal: {self.number_of_disposal}\n"
+            f"Disposal proceeds: £{self.disposal_proceeds:.2f}\n"
+            f"Allowable cost: £{self.allowable_cost:.2f}\n"
+            f"Total gain exclude loss: £{self.total_gain:.2f}\n"
+            f"Capital loss: £{self.capital_loss:.2f}\n"
+        )
 
 
 class TaxYearWidget(MDBoxLayout):
@@ -91,7 +141,7 @@ class TaxYearWidget(MDBoxLayout):
         if len(date_range) < 2:
             toast("Please select a valid date range with start and end date")
         else:
-            self.app.date_range = (date_range[0], date_range[-1])
+            self.app.date_range = Daterange(date_range[0], date_range[-1])
             self.display = self.LABEL_CUSTOM
 
     def show_date_picker(self):
