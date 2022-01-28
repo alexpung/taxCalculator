@@ -53,7 +53,7 @@ class Money:
             prefix = ""
         return (
             prefix + f"{self.currency.code}{self.value:.2f}"
-            f"with exchange rate {self.exchange_rate}\n"
+            f" with exchange rate {self.exchange_rate}\n"
             f"Converted to £{self.get_value():.2f}\n"
         )
 
@@ -161,9 +161,7 @@ class Trade(Transaction):
     size: Number of shares if buy/sell.
     transaction value: Gross value of the trade
     fee_and_tax: Note that fee could be negative due to rebates,
-    here the convention is negative value means fee, and positive value mean credit
-    (same as xml report)
-    tax also would have a negative value
+    here the convention is positive value means fee, and negative value mean credit
     """
 
     size: Decimal  # for fractional shares
@@ -186,11 +184,12 @@ class Trade(Transaction):
         self.match_status = HMRCMatchStatus(self.size)
 
     def get_partial_value(self, qty: Decimal) -> Decimal:
-        """return the value for partial share matching for this transaction"""
-        net_value = self.transaction_value.get_value() + sum(
-            fee.get_value() for fee in self.fee_and_tax
-        )
-        return net_value * qty / self.size
+        """return the gross value for partial share matching for this transaction"""
+        return self.transaction_value.get_value() * qty / self.size
+
+    def get_partial_fee(self, qty: Decimal) -> Decimal:
+        """return the allowable fee for partial share matching for this transaction"""
+        return sum(fee.get_value() for fee in self.fee_and_tax) * qty / self.size
 
     def get_table_repr(self) -> Tuple[str, ...]:
         """Return Tuple representation of the transaction"""
@@ -223,10 +222,10 @@ class Trade(Transaction):
             f"Gross trade value:\n"
             f"{self.transaction_value}"
             f"\nTotal incidental cost: "
-            f"{sum(fee.get_value() for fee in self.fee_and_tax):.2f}\n"
+            f"£{sum(fee.get_value() for fee in self.fee_and_tax):.2f}\n"
             f"{fee_string}"
             f"{short_share}"
-            f"{self.match_status.comment}"
+            f"\n{self.match_status.comment}"
         )
 
 

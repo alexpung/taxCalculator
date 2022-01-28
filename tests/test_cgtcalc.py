@@ -52,9 +52,9 @@ class TestCalculator(unittest.TestCase):
         ]
         test = CgtCalculator(trades)
         test.calculate_tax()
-        self.assertIn(
-            "Sold shares not yet matched (short sale): 50.00",
-            test.transaction_list[1].match_status.comment,
+        self.assertEqual(
+            50,
+            test.transaction_list[1].match_status.unmatched,
         )
 
     def test_mixed_ticker(self) -> None:
@@ -391,28 +391,32 @@ class TestCalculator(unittest.TestCase):
                 datetime.date(2014, 4, 1),
                 TransactionType.BUY,
                 Decimal(1000),
-                Money(Decimal(4150)),  # £4*1000 + £150
+                Money(Decimal(4000)),
+                [Money(Decimal(150), note="Broker Commission")],
             ),
             Trade(
                 "Lobster plc",
                 datetime.date(2017, 9, 1),
                 TransactionType.BUY,
                 Decimal(500),
-                Money(Decimal(2130)),  # £4.1*500 + £80
+                Money(Decimal(2050)),
+                [Money(Decimal(80), note="Broker Commission")],
             ),
             Trade(
                 "Lobster plc",
                 datetime.date(2020, 5, 1),
                 TransactionType.SELL,
                 Decimal(700),
-                Money(Decimal(3260)),  # £3360 - £100
+                Money(Decimal(3360)),
+                [Money(Decimal(100), note="Broker Commission")],
             ),
             Trade(
                 "Lobster plc",
                 datetime.date(2021, 2, 1),
                 TransactionType.SELL,
                 Decimal(400),
-                Money(Decimal(1975)),  # £2080 - £105
+                Money(Decimal(2080)),
+                [Money(Decimal(105), note="Broker Commission")],
             ),
         ]
         test = CgtCalculator(trades)

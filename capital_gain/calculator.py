@@ -4,7 +4,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from capital_gain import comments
-from capital_gain.exception import MixedTickerError, UnprocessedShareException
+from capital_gain.exception import MixedTickerError
 from capital_gain.model import MatchType, Section104, Trade, TransactionType
 
 
@@ -26,7 +26,6 @@ class CgtCalculator:
         self.match_same_day_disposal()
         self.match_bed_and_breakfast_disposal()
         self.match_section104()
-        self.handle_unmatched_shares()
         return self.section104
 
     @staticmethod
@@ -44,11 +43,18 @@ class CgtCalculator:
         if to_match == 0:
             return
         proceeds = sell_transaction.get_partial_value(to_match)
-        cost = buy_transaction.get_partial_value(to_match)
-        capital_gain = proceeds - cost
+        buy_cost = buy_transaction.get_partial_value(to_match)
+        trade_cost_buy = buy_transaction.get_partial_fee(to_match)
+        trade_cost_sell = sell_transaction.get_partial_fee(to_match)
+        capital_gain = proceeds - buy_cost - trade_cost_buy - trade_cost_sell
         sell_transaction.match_status.total_gain += capital_gain
         sell_transaction.match_status.comment += comments.capital_gain_calc(
-            buy_transaction.transaction_id, to_match, proceeds, cost
+            buy_transaction.transaction_id,
+            to_match,
+            proceeds,
+            buy_cost,
+            trade_cost_buy,
+            trade_cost_sell,
         )
         buy_transaction.match_status.match(to_match, sell_transaction, match_type)
         sell_transaction.match_status.match(to_match, buy_transaction, match_type)
@@ -103,8 +109,11 @@ class CgtCalculator:
                     None,
                     MatchType.SECTION104,
                 )
+                total_buy_cost = transaction.get_partial_value(
+                    share_to_be_added
+                ) + transaction.get_partial_fee(share_to_be_added)
                 comment = self.section104.add_to_section104(
-                    share_to_be_added, transaction.get_partial_value(share_to_be_added)
+                    share_to_be_added, total_buy_cost
                 )
             elif (
                 transaction.transaction_type == TransactionType.SELL
@@ -118,24 +127,23 @@ class CgtCalculator:
                 transaction.match_status.match(
                     matchable_shares, None, MatchType.SECTION104
                 )
-                comment, cost = self.section104.remove_from_section104(matchable_shares)
+                comment, buy_cost = self.section104.remove_from_section104(
+                    matchable_shares
+                )
                 proceeds = transaction.get_partial_value(matchable_shares)
-                capital_gain = proceeds - cost
+                capital_gain = (
+                    proceeds - buy_cost - transaction.get_partial_fee(matchable_shares)
+                )
                 transaction.match_status.total_gain += capital_gain
                 comment = (
-                    comments.capital_gain_calc(None, matchable_shares, proceeds, cost)
+                    comments.capital_gain_calc(
+                        None,
+                        matchable_shares,
+                        proceeds,
+                        buy_cost,
+                        trade_cost_sell=transaction.get_partial_fee(matchable_shares),
+                    )
                     + comment
                 )
             if comment:
                 transaction.match_status.comment += comment
-
-    def handle_unmatched_shares(self) -> None:
-        """Add a comment for remaining short sale sell that is not matched"""
-        for transaction in self.transaction_list:
-            if transaction.match_status.unmatched:
-                if transaction.transaction_type == TransactionType.SELL:
-                    transaction.match_status.comment += comments.unmatched_shares(
-                        transaction.match_status.unmatched
-                    )
-                else:
-                    raise UnprocessedShareException(str(transaction))

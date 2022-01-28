@@ -64,7 +64,7 @@ def transform_trade(xml_entry: ET.Element) -> Trade:
     if Decimal(xml_entry.attrib["ibCommission"]):
         fee_and_tax.append(
             Money(
-                Decimal(xml_entry.attrib["ibCommission"]),
+                Decimal(xml_entry.attrib["ibCommission"]) * -1,
                 # Have to make assumption here IB commission currency
                 # is the same as transaction currency
                 Decimal(xml_entry.attrib["fxRateToBase"])
@@ -78,7 +78,7 @@ def transform_trade(xml_entry: ET.Element) -> Trade:
     if Decimal(xml_entry.attrib["taxes"]):
         fee_and_tax.append(
             Money(
-                Decimal(xml_entry.attrib["taxes"]),
+                Decimal(xml_entry.attrib["taxes"]) * -1,
                 Decimal(xml_entry.attrib["fxRateToBase"]),
                 Currency(xml_entry.attrib["currency"]),
                 "Tax",
