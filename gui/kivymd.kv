@@ -41,8 +41,8 @@
             text: root.selected_format.value
             on_release: root.dropdown.open()
         MDRaisedButton:
-            text: 'Export'
-            on_release: toast(export_format.current_item)
+            text: 'Export all'
+            on_release: root.export_all()
 
 
 <ItemDrawer>:
