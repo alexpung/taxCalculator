@@ -53,8 +53,8 @@ class Money:
             prefix = ""
         return (
             prefix + f"{self.currency.code}{self.value:.2f}"
-            f" with exchange rate {self.exchange_rate}\n"
-            f"Converted to £{self.get_value():.2f}\n"
+            f" with exchange rate {self.exchange_rate}"
+            f" Converted to £{self.get_value():.2f}\n"
         )
 
 

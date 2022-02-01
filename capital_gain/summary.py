@@ -118,5 +118,5 @@ class CgtTaxSummary:
             f"Disposal proceeds: £{disposal_proceeds:.2f}\n"
             f"Allowable cost: £{allowable_cost:.2f}\n"
             f"Total gain exclude loss: £{total_gain:.2f}\n"
-            f"Capital loss: £{capital_loss:.2f}\n"
+            f"Capital loss: £{capital_loss:.2f}\n\n"
         )
