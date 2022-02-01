@@ -42,9 +42,7 @@ def capital_gain_calc(
     transaction_id: pass None if it is a section104 match
     """
     if transaction_id is None:
-        matching_comment = (
-            f"Matched section 104 holding with with quantity {qty:.2f}.\n"
-        )
+        matching_comment = f"Matched section 104 holding with quantity {qty:.2f}.\n"
     else:
         matching_comment = (
             f"Matched with transaction id {transaction_id} with quantity {qty:.2f}.\n"
