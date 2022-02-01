@@ -18,20 +18,31 @@
             text: "Custom Date"
             on_release: root.show_date_picker()
 
-<ImportExportWidget@MDBoxLayout>:
-    spacing: 10
-    orientation: 'vertical'
-    TaxYearWidget:
+<ImportExportWidget>:
+    orientation: "vertical"
     MDLabel:
-        text: "Import/Export Control"
-    MDRaisedButton:
-        text: "Import file"
-        text_color: 0, 0, 1, 1
-        on_release: app.select_file()
-    MDRaisedButton:
-        text: "Import folder"
-        text_color: 0, 0, 1, 1
-        on_release: app.select_directory()
+        text: "Import:"
+    MDBoxLayout:
+        spacing: 10
+        MDRaisedButton:
+            text: "Import file"
+            on_release: app.select_file()
+        MDRaisedButton:
+            text: "Import folder"
+            on_release: app.select_directory()
+    MDLabel:
+        text: "Export:"
+    MDBoxLayout:
+        spacing: 10
+        MDLabel:
+            text: "File format"
+        MDDropDownItem:
+            id: export_format
+            text: root.selected_format.value
+            on_release: root.dropdown.open()
+        MDRaisedButton:
+            text: 'Export'
+            on_release: toast(export_format.current_item)
 
 
 <ItemDrawer>:
@@ -115,16 +126,7 @@ MDNavigationLayout:
                             size_hint: (1, 0.25)
                             orientation: 'vertical'
                             TaxYearWidget:
-                            MDLabel:
-                                text: "Import/Export Control"
-                            MDRaisedButton:
-                                text: "Import file"
-                                text_color: 0, 0, 1, 1
-                                on_release: app.select_file()
-                            MDRaisedButton:
-                                text: "Import folder"
-                                text_color: 0, 0, 1, 1
-                                on_release: app.select_directory()
+                            ImportExportWidget:
                         TableLayout:
                             size_hint: (1, 0.75)
                             orientation: 'vertical'

@@ -2,6 +2,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
 import datetime
+from enum import Enum
 from glob import glob
 import re
 from tkinter import Tk, filedialog
@@ -19,6 +20,7 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.datatables import MDDataTable
 from kivymd.uix.label import MDLabel
 from kivymd.uix.list import OneLineIconListItem
+from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.pickers import MDDatePicker
 
 from capital_gain.calculator import CgtCalculator
@@ -46,11 +48,6 @@ class CapitalGainSummaryLabel(MDLabel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.disposal_proceeds = None
-        self.allowable_cost = None
-        self.total_gain = None
-        self.capital_loss = None
-        self.number_of_disposal: int = 0
         self.app = MDApp.get_running_app()
         self.app.bind(trades=self.calculate_summary)
         self.app.bind(date_range=self.calculate_summary)
@@ -111,6 +108,48 @@ class TaxYearWidget(MDBoxLayout):
         date_dialog = MDDatePicker(mode="range", min_year=2000)
         date_dialog.bind(on_save=self.on_save)
         date_dialog.open()
+
+
+class FormatOption(Enum):
+    """Export format that is available"""
+
+    PLAIN_TEXT = "Plain text"
+    EXCEL = "Excel"
+
+
+class ImportExportWidget(MDBoxLayout):
+    """Layout for controlling the import and export of trade data"""
+
+    selected_format = ObjectProperty(FormatOption.PLAIN_TEXT, rebind=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.dropdown = None
+        self.options = [
+            {
+                "viewclass": "OneLineListItem",
+                "text": FormatOption.PLAIN_TEXT.value,
+                "on_release": lambda x=FormatOption.PLAIN_TEXT: self.set_export_format(
+                    x
+                ),
+            },
+            {
+                "viewclass": "OneLineListItem",
+                "text": FormatOption.EXCEL.value,
+                "on_release": lambda x=FormatOption.EXCEL: self.set_export_format(x),
+            },
+        ]
+
+    def on_kv_post(self, base_widget):
+        """called after kv string load so id can be accessed"""
+        caller = self.ids.export_format
+        self.dropdown = MDDropdownMenu(caller=caller, items=self.options, width_mult=4)
+        self.dropdown.bind()
+
+    def set_export_format(self, selected_format: FormatOption) -> None:
+        """Called when the export format is selected from dropdown menu"""
+        self.selected_format = selected_format
+        self.dropdown.dismiss()
 
 
 class TableLayout(MDBoxLayout):
