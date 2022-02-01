@@ -23,13 +23,7 @@ from kivymd.uix.pickers import MDDatePicker
 
 from capital_gain.calculator import CgtCalculator
 from capital_gain.model import Dividend, Section104, Trade
-from capital_gain.summary import (
-    allowable_cost,
-    capital_loss,
-    disposal_proceeds,
-    number_of_disposal,
-    total_gain_exclude_loss,
-)
+from capital_gain.summary import CgtTaxSummary
 from gui.table_display import convert_table_header, get_colored_table_row
 from statement_parser.ibkr import parse_dividend, parse_trade
 
@@ -63,42 +57,10 @@ class CapitalGainSummaryLabel(MDLabel):
 
     def calculate_summary(self, *_args):
         """To calculate the capital gain tax summary"""
-        self.number_of_disposal = number_of_disposal(
+        self.text = CgtTaxSummary.get_text_summary(
             self.app.trades,
             self.app.date_range.start_date,
             self.app.date_range.end_date,
-        )
-        self.disposal_proceeds = disposal_proceeds(
-            self.app.trades,
-            self.app.date_range.start_date,
-            self.app.date_range.end_date,
-        )
-        self.allowable_cost = allowable_cost(
-            self.app.trades,
-            self.app.date_range.start_date,
-            self.app.date_range.end_date,
-        )
-        self.total_gain = total_gain_exclude_loss(
-            self.app.trades,
-            self.app.date_range.start_date,
-            self.app.date_range.end_date,
-        )
-        self.capital_loss = capital_loss(
-            self.app.trades,
-            self.app.date_range.start_date,
-            self.app.date_range.end_date,
-        )
-        self.text = self.show_text()
-
-    def show_text(self):
-        """Show capital gain summary in the app"""
-        return (
-            "Capital gain summary:\n"
-            f"Number of disposal: {self.number_of_disposal}\n"
-            f"Disposal proceeds: £{self.disposal_proceeds:.2f}\n"
-            f"Allowable cost: £{self.allowable_cost:.2f}\n"
-            f"Total gain exclude loss: £{self.total_gain:.2f}\n"
-            f"Capital loss: £{self.capital_loss:.2f}\n"
         )
 
 
