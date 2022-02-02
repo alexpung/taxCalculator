@@ -3,3 +3,4 @@
 *.xlsx
 *.xlsx#
 /.coverage
+*.txt
