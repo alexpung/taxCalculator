@@ -218,7 +218,8 @@ class CalculatorApp(MDApp):
         root.withdraw()
         file_path = filedialog.askdirectory()
         if file_path != "":
-            self.import_folder(file_path)
+            for file in glob(file_path + "/*.xml"):
+                self.calculate(file)
 
     def select_file(self) -> None:
         """Invoke Tinker for selecting an import file"""
@@ -226,7 +227,7 @@ class CalculatorApp(MDApp):
         root.withdraw()
         file_name = filedialog.askopenfilename()
         if file_name != "":
-            self.import_file(file_name)
+            self.calculate(file_name)
 
     def calculate(self, file: str) -> None:
         """invoke calculation of capital gain"""
@@ -243,16 +244,6 @@ class CalculatorApp(MDApp):
         # sort the results and put it in the table
         self.trades = sorted(self.trades, key=lambda x: (x.ticker, x.transaction_date))
         self.update_table()
-
-    def import_file(self, file: str) -> None:
-        """Import a single file"""
-        self.calculate(file)
-
-    def import_folder(self, path: str) -> None:
-        """Import a directory"""
-        # hardcoded to import XML file
-        for file in glob(path + "/*.xml"):
-            self.calculate(file)
 
     def on_row_press(self, _, instance_row) -> None:
         """Called when a table row is clicked."""
