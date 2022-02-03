@@ -11,6 +11,7 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.menu import MDDropdownMenu
 
 from capital_gain.capital_summary import CgtTaxSummary
+from capital_gain.dividend_summary import DividendSummary
 from capital_gain.section104 import show_section104_and_short
 
 
@@ -61,6 +62,13 @@ class ImportExportWidget(MDBoxLayout):
             toast("Excel format is not supported yet")
         elif self.selected_format == FormatOption.PLAIN_TEXT:
             with codecs.open("output.txt", "w", encoding="utf8") as file:
+                dividend_summary = DividendSummary(
+                    self.app.dividends,
+                    self.app.date_range.start_date,
+                    self.app.date_range.end_date,
+                )
+                file.write(dividend_summary.show_dividend_by_country())
+                file.write(dividend_summary.show_dividend_total())
                 file.write(
                     CgtTaxSummary.get_text_summary(
                         self.app.trades,
