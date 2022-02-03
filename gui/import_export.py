@@ -11,6 +11,7 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.menu import MDDropdownMenu
 
 from capital_gain.capital_summary import CgtTaxSummary
+from capital_gain.section104 import show_section104_and_short
 
 
 class FormatOption(Enum):
@@ -66,6 +67,9 @@ class ImportExportWidget(MDBoxLayout):
                         self.app.date_range.start_date,
                         self.app.date_range.end_date,
                     )
+                )
+                file.write(
+                    show_section104_and_short(self.app.trades, self.app.section104)
                 )
                 for trade in self.app.trades:
                     file.write(str(trade))
