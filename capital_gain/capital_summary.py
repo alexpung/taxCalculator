@@ -113,7 +113,7 @@ class CgtTaxSummary:
             tax_year_end,
         )
         return (
-            "Capital gain summary:\n"
+            f"Capital gain summary from {tax_year_start} to {tax_year_end}:\n"
             f"Number of disposal: {number_of_disposal}\n"
             f"Disposal proceeds: £{disposal_proceeds:.2f}\n"
             f"Allowable cost: £{allowable_cost:.2f}\n"
