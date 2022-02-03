@@ -49,9 +49,9 @@ class DividendSummary:
             f"Total dividends from {self.tax_year_start} to {self.tax_year_end}:\n"
         )
         output_string += (
-            f"Total Dividends: £{total_dividend}\n"
-            f"Foreign withholding tax: £{withholding_tax}\n"
-            f"Net income received: £{net_income}\n\n"
+            f"Total Dividends: £{total_dividend:.2f}\n"
+            f"Foreign withholding tax: £{withholding_tax:.2f}\n"
+            f"Net income received: £{net_income:.2f}\n\n"
         )
         return output_string
 
@@ -86,10 +86,10 @@ class DividendSummary:
             net_income = total_dividend - withholding_tax
             output_string += (
                 f"Dividends for {country}:\n"
-                f"Dividends: £{dividend}\n"
-                f"Dividends in lieu: £{dividend_in_lieu}\n"
-                f"Total Dividends: £{total_dividend}\n"
-                f"Foreign withholding tax: £{withholding_tax}\n"
-                f"Net income received: £{net_income}\n\n"
+                f"Dividends: £{dividend:.2f}\n"
+                f"Dividends in lieu: £{dividend_in_lieu:.2f}\n"
+                f"Total Dividends: £{total_dividend:.2f}\n"
+                f"Foreign withholding tax: £{withholding_tax:.2f}\n"
+                f"Net income received: £{net_income:.2f}\n\n"
             )
         return output_string

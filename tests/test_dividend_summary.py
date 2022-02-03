@@ -33,7 +33,7 @@ class TestCalculator(unittest.TestCase):
                 "ABC",
                 datetime.date(2021, 4, 6),
                 TransactionType.WITHHOLDING,
-                Money(Decimal(-20), Decimal("0.5"), Currency("USD")),
+                Money(Decimal(20), Decimal("0.5"), Currency("USD")),
                 "USA",
             ),
             Dividend(
@@ -54,7 +54,7 @@ class TestCalculator(unittest.TestCase):
                 "EFG",
                 datetime.date(2021, 8, 5),
                 TransactionType.WITHHOLDING,
-                Money(Decimal(-200), Decimal("2"), Currency("CAD")),
+                Money(Decimal(200), Decimal("2"), Currency("CAD")),
                 "CAN",
             ),
             Dividend(
@@ -88,25 +88,25 @@ class TestCalculator(unittest.TestCase):
         result = data.show_dividend_by_country()
         expected_output = """Dividends by country from 2021-04-06 to 2022-04-05:
 Dividends for USA:
-Dividends: £100.0
-Dividends in lieu: £0
-Total Dividends: £100.0
-Foreign withholding tax: £-10.0
-Net income received: £110.0
+Dividends: £100.00
+Dividends in lieu: £0.00
+Total Dividends: £100.00
+Foreign withholding tax: £10.00
+Net income received: £90.00
 
 Dividends for CAN:
-Dividends: £1500
-Dividends in lieu: £0
-Total Dividends: £1500
-Foreign withholding tax: £-400
-Net income received: £1900
+Dividends: £1500.00
+Dividends in lieu: £0.00
+Total Dividends: £1500.00
+Foreign withholding tax: £400.00
+Net income received: £1100.00
 
 Dividends for HKG:
-Dividends: £40.0
-Dividends in lieu: £20.0
-Total Dividends: £60.0
-Foreign withholding tax: £0
-Net income received: £60.0
+Dividends: £40.00
+Dividends in lieu: £20.00
+Total Dividends: £60.00
+Foreign withholding tax: £0.00
+Net income received: £60.00
 
 """
         self.assertEqual(expected_output, result)
@@ -118,9 +118,9 @@ Net income received: £60.0
         )
         result = data.show_dividend_total()
         expected_result = """Total dividends from 2021-04-06 to 2022-04-05:
-Total Dividends: £1660.0
-Foreign withholding tax: £-410.0
-Net income received: £2070.0
+Total Dividends: £1660.00
+Foreign withholding tax: £410.00
+Net income received: £1250.00
 
 """
         self.assertEqual(expected_result, result)

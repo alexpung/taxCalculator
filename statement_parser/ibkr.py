@@ -30,16 +30,19 @@ def get_country_code(xml_entry: ET.Element) -> str:
 
 def transform_dividend(xml_entry: ET.Element) -> Dividend:
     """parse cash transaction entries to Dividend objects"""
-    value = Money(
+    dividend_value = Money(
         Decimal(xml_entry.attrib["amount"]),
         Decimal(xml_entry.attrib["fxRateToBase"]),
         Currency(xml_entry.attrib["currency"]),
     )
+    # correct negative sign for consistency
+    if xml_entry.attrib["type"] == TransactionType.WITHHOLDING.value:
+        dividend_value.value = dividend_value.value * -1
     return Dividend(
         xml_entry.attrib["symbol"],
-        datetime.strptime(xml_entry.attrib["reportDate"], "%d-%b-%y"),
+        datetime.strptime(xml_entry.attrib["reportDate"], "%d-%b-%y").date(),
         TransactionType(xml_entry.attrib["type"]),
-        value,
+        dividend_value,
         get_country_code(xml_entry),
         description=str(xml_entry.attrib["description"]),
     )
@@ -52,6 +55,7 @@ def transform_trade(xml_entry: ET.Element) -> Trade:
     # thus making the wrong conversion
     """
     if xml_entry.attrib["buySell"] == TransactionType.BUY.value:
+        # correct negative sign for consistency
         proceeds = Decimal(xml_entry.attrib["proceeds"]) * -1
     else:
         proceeds = Decimal(xml_entry.attrib["proceeds"])
@@ -64,6 +68,7 @@ def transform_trade(xml_entry: ET.Element) -> Trade:
     if Decimal(xml_entry.attrib["ibCommission"]):
         fee_and_tax.append(
             Money(
+                # correct negative sign for consistency
                 Decimal(xml_entry.attrib["ibCommission"]) * -1,
                 # Have to make assumption here IB commission currency
                 # is the same as transaction currency
@@ -78,6 +83,7 @@ def transform_trade(xml_entry: ET.Element) -> Trade:
     if Decimal(xml_entry.attrib["taxes"]):
         fee_and_tax.append(
             Money(
+                # correct negative sign for consistency
                 Decimal(xml_entry.attrib["taxes"]) * -1,
                 Decimal(xml_entry.attrib["fxRateToBase"]),
                 Currency(xml_entry.attrib["currency"]),
