@@ -184,6 +184,10 @@ class Trade(Transaction):
         super().__post_init__()
         self.match_status = HMRCMatchStatus(self.size)
 
+    def clear_calculation(self):
+        """discard old calculation and start anew"""
+        self.match_status = HMRCMatchStatus(self.size)
+
     def get_partial_value(self, qty: Decimal) -> Decimal:
         """return the gross value for partial share matching for this transaction"""
         return self.transaction_value.get_value() * qty / self.size

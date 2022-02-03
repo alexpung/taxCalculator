@@ -108,6 +108,8 @@ class CalculatorApp(MDApp):
         self.trades.extend(parse_trade(file))
         self.dividends.extend(parse_dividend(file))
         trade_bucket = defaultdict(list)
+        # clear old section 104 before calculate again
+        self.section104 = []
         # put trades with the same symbol together and calculate tax
         for trade in self.trades:
             trade_bucket[trade.ticker].append(trade)

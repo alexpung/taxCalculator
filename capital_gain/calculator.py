@@ -14,6 +14,8 @@ class CgtCalculator:
     def __init__(self, transaction_list: list[Trade]) -> None:
         ticker = transaction_list[0].ticker
         for transaction in transaction_list:
+            # old calculation may be included and need to be cleared first
+            transaction.clear_calculation()
             if transaction.ticker != ticker:
                 raise MixedTickerError(transaction.ticker, ticker)
         self.transaction_list = transaction_list
