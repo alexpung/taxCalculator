@@ -9,7 +9,24 @@ To help report UK tax for dividend and capital gain.
 
 # What is included
 
-1. XML downloader to download report from web flex query
-2. Dividend summary generator to an Excel file (gross dividend and withholding tax by company country, for any period)
-3. (planning) Capital gain tax calculation to the same Excel file
-4. (planning) Handle tax relief cap due to tax treaty
+1. XML downloader to download report from web flex query (\xml_import\importer.py)
+2. GUI interface with kivyMD (\gui\main_app.py)
+
+# Current functionality
+
+1. Parse Interactive Brokers trade data to Trade objects, then use these objects to calculate capital gain and loss
+2. Parse Interactive Brokers dividend/dividend in lieu/Witholding tax and shows dividend by country and total income for the tax year specified
+3. For each trade calculation steps are shown (in export text file or GUI windows)
+4. Show section 104 holdings and sell that are unmatched with a buy (i.e. short sale)
+5. Show trades in the GUI to allow user double-checking.
+
+Known limitation:
+
+1. Corporate Action is not handled yet
+2. Most of the GUI interface is not implemented yet
+
+This project use Poetry to manage dependency.
+To set up:
+
+1. pip install --user poetry
+2. poetry install
