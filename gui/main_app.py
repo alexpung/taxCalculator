@@ -25,8 +25,8 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.pickers import MDDatePicker
 
 from capital_gain.calculator import CgtCalculator
+from capital_gain.capital_summary import CgtTaxSummary
 from capital_gain.model import Dividend, Section104, Trade
-from capital_gain.summary import CgtTaxSummary
 from gui.table_display import convert_table_header, get_colored_table_row
 from statement_parser.ibkr import parse_dividend, parse_trade
 
