@@ -5,8 +5,8 @@ from decimal import Decimal
 import unittest
 
 from capital_gain.calculator import CgtCalculator
+from capital_gain.capital_summary import CgtTaxSummary
 from capital_gain.model import Money, Trade, TransactionType
-from capital_gain.summary import CgtTaxSummary
 
 
 class TestCgtSummary(unittest.TestCase):
