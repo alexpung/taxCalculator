@@ -1,12 +1,14 @@
 """ statement importing for interactive brokers """
 from datetime import datetime
 from decimal import Decimal
+from fractions import Fraction
+import re
 import xml.etree.ElementTree as ET
 
 from iso3166 import countries
 from iso4217 import Currency
 
-from capital_gain.model import Dividend, Money, Trade, TransactionType
+from capital_gain.model import Dividend, Money, ShareReorg, Trade, TransactionType
 
 
 def get_country_code(xml_entry: ET.Element) -> str:
@@ -122,3 +124,40 @@ def parse_trade(file: str) -> list[Trade]:
     test = tree.findall(".//Trades/Order")
     trade_list = [x for x in test if x.attrib["assetCategory"] == "STK"]
     return [transform_trade(trade) for trade in trade_list]
+
+
+def transform_corp_action(xml_entry: ET.Element) -> ShareReorg:
+    """Parse corporation entries to ShareReorg objects, currently only split and
+    reverse split is supported"""
+    if xml_entry.attrib["type"] == "FS":
+        action_type = TransactionType.SHARE_SPLIT
+    elif xml_entry.attrib["type"] == "RS":
+        action_type = TransactionType.SHARE_MERGE
+    else:
+        action_type = TransactionType.CORP_ACTION_OTHER
+    # extract ratio from the description
+    ratio_matcher = re.compile(r"(\d*) FOR (\d*)")
+    result = re.search(ratio_matcher, xml_entry.attrib["actionDescription"])
+    if result is None:
+        raise ValueError("Cannot find stock split ration from description")
+    else:
+        ratio = Fraction(int(result.group(1)), int(result.group(2)))
+    return ShareReorg(
+        xml_entry.attrib["symbol"],
+        datetime.strptime(
+            xml_entry.attrib["dateTime"].split(" ")[0], "%d-%b-%y"
+        ).date(),
+        action_type,
+        Decimal(xml_entry.attrib["quantity"]),
+        ratio,
+        xml_entry.attrib["actionDescription"],
+    )
+
+
+def parse_corp_action(file: str):
+    """Parse xml to extract Corporation objects"""
+    supported_type = ["FS", "RS"]
+    tree = ET.parse(file)
+    test = tree.findall(".//CorporateActions/CorporateAction")
+    action_list = [x for x in test if x.attrib["type"] in supported_type]
+    return [transform_corp_action(action) for action in action_list]

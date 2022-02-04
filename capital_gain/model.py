@@ -5,8 +5,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import datetime
 from decimal import Decimal
-from enum import Enum, auto
-from typing import ClassVar, Tuple, Union
+from enum import Enum
+from fractions import Fraction
+from typing import ClassVar, List, Tuple, Union
 
 from iso4217 import Currency
 
@@ -19,7 +20,9 @@ class TransactionType(Enum):
 
     BUY = "BUY"
     SELL = "SELL"
-    CORPORATE_ACTION = auto()
+    SHARE_SPLIT = "Forward Split"
+    SHARE_MERGE = "Reverse Split"
+    CORP_ACTION_OTHER = "Other Corporate Action"
     WITHHOLDING = "Withholding Tax"
     DIVIDEND = "Dividends"
     DIVIDEND_IN_LIEU = "Payment In Lieu Of Dividends"
@@ -119,7 +122,7 @@ class Transaction(ABC):
 
     @property
     @abstractmethod
-    def table_header(self):
+    def table_header(self) -> List[str]:
         """subclass should show the header when displaying in a table"""
 
 
@@ -155,20 +158,12 @@ class Dividend(Transaction):
         )
 
 
-@dataclass
-class Trade(Transaction):
-    """Dataclass to store transaction
-    ticker: A string represent the symbol of the security
-    size: Number of shares if buy/sell.
-    transaction value: Gross value of the trade
-    fee_and_tax: Note that fee could be negative due to rebates,
-    here the convention is positive value means fee, and negative value mean credit
-    """
+@dataclass  # type:ignore
+class TradeWithTableHeader(Transaction, ABC):
+    """Abstract class with table header for trade data display"""
 
-    size: Decimal  # for fractional shares
-    transaction_value: Money
+    size: Decimal
     match_status: HMRCMatchStatus = field(init=False)
-    fee_and_tax: list[Money] = field(default_factory=list)
     table_header: ClassVar = [
         "ID",
         "Symbol",
@@ -180,13 +175,51 @@ class Trade(Transaction):
         "Capital gain (loss)",
     ]
 
+    def clear_calculation(self):
+        """discard old calculation and start anew"""
+        self.match_status = HMRCMatchStatus(self.size)
+
     def __post_init__(self) -> None:
         super().__post_init__()
         self.match_status = HMRCMatchStatus(self.size)
 
-    def clear_calculation(self):
-        """discard old calculation and start anew"""
-        self.match_status = HMRCMatchStatus(self.size)
+
+@dataclass
+class ShareReorg(TradeWithTableHeader):
+    """Dataclass to strore share split and merge events
+    ratio: If there is a share split of 2 shares
+    """
+
+    ratio: Fraction
+    description: str
+    # just to store comments during calculation
+
+    def get_table_repr(self) -> Tuple[str, ...]:
+        """Return Tuple representation of the transaction"""
+        return (
+            str(self.transaction_id),
+            str(self.ticker),
+            str(self.transaction_date.strftime("%d %b %Y")),
+            str(self.transaction_type.value),
+            f"{self.size:.2f}",
+            "N/A",
+            "N/A",
+            "N/A",
+        )
+
+
+@dataclass
+class Trade(TradeWithTableHeader):
+    """Dataclass to store transaction
+    ticker: A string represent the symbol of the security
+    size: Number of shares if buy/sell.
+    transaction value: Gross value of the trade
+    fee_and_tax: Note that fee could be negative due to rebates,
+    here the convention is positive value means fee, and negative value mean credit
+    """
+
+    transaction_value: Money
+    fee_and_tax: list[Money] = field(default_factory=list)
 
     def get_partial_value(self, qty: Decimal) -> Decimal:
         """return the gross value for partial share matching for this transaction"""

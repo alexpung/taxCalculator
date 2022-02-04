@@ -21,7 +21,7 @@ from capital_gain.calculator import CgtCalculator
 from capital_gain.capital_summary import CgtTaxSummary
 from capital_gain.model import Dividend, Section104, Trade
 from gui.table_display import convert_table_header, get_colored_table_row
-from statement_parser.ibkr import parse_dividend, parse_trade
+from statement_parser.ibkr import parse_corp_action, parse_dividend, parse_trade
 
 Config.set("input", "mouse", "mouse,multitouch_on_demand")
 
@@ -106,6 +106,7 @@ class CalculatorApp(MDApp):
     def calculate(self, file: str) -> None:
         """invoke calculation of capital gain"""
         self.trades.extend(parse_trade(file))
+        self.trades.extend(parse_corp_action(file))
         self.dividends.extend(parse_dividend(file))
         trade_bucket = defaultdict(list)
         # clear old section 104 before calculate again
