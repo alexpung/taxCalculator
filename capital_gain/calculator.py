@@ -3,6 +3,9 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+# from fractions import Fraction
+from typing import List, Union
+
 from capital_gain import comments
 from capital_gain.comments import share_reorg_to_section104
 from capital_gain.exception import MixedTickerError
@@ -12,14 +15,23 @@ from capital_gain.model import MatchType, Section104, ShareReorg, Trade, Transac
 class CgtCalculator:
     """To calculate capital gain"""
 
-    def __init__(self, transaction_list: list[Trade]) -> None:
+    def __init__(self, transaction_list: List[Union[Trade, ShareReorg]]) -> None:
         ticker = transaction_list[0].ticker
         for transaction in transaction_list:
             # old calculation may be included and need to be cleared first
             transaction.clear_calculation()
             if transaction.ticker != ticker:
                 raise MixedTickerError(transaction.ticker, ticker)
-        self.transaction_list = transaction_list
+        self.transaction_list = [
+            transaction
+            for transaction in transaction_list
+            if isinstance(transaction, Trade)
+        ]
+        self.corp_action_list = [
+            transaction
+            for transaction in transaction_list
+            if isinstance(transaction, ShareReorg)
+        ]
         self.transaction_list.sort()
         self.section104 = Section104(ticker, Decimal(0), Decimal(0))
 
