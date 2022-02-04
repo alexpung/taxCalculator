@@ -54,11 +54,14 @@ class Money:
             prefix = f"{self.note}: "
         else:
             prefix = ""
-        return (
-            prefix + f"{self.currency.code}{self.value:.2f}"
-            f" with exchange rate {self.exchange_rate}"
-            f" Converted to £{self.get_value():.2f}\n"
-        )
+        if self.currency == Currency("GBP"):
+            fx_suffix = ""
+        else:
+            fx_suffix = (
+                f" with exchange rate {self.exchange_rate} "
+                f"converted to £{self.get_value():.2f}"
+            )
+        return prefix + f"{self.currency.code}{self.value:.2f}" + fx_suffix + "\n"
 
 
 @dataclass
