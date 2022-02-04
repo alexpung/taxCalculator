@@ -175,24 +175,25 @@ class TradeWithTableHeader(Transaction, ABC):
         "Capital gain (loss)",
     ]
 
-    def clear_calculation(self):
-        """discard old calculation and start anew"""
-        self.match_status = HMRCMatchStatus(self.size)
-
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        self.match_status = HMRCMatchStatus(self.size)
-
 
 @dataclass
 class ShareReorg(TradeWithTableHeader):
-    """Dataclass to strore share split and merge events
-    ratio: If there is a share split of 2 shares
+    """Dataclass to store share split and merge events
+    ratio: If there is a share split of 2 shares to 5, then the ratio would be 2.5
     """
 
     ratio: Fraction
-    description: str
+    description: str = ""
     # just to store comments during calculation
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.match_status = HMRCMatchStatus(Decimal(0))
+
+    # cannot just call __post_init__ as trade ID do not change
+    def clear_calculation(self):
+        """discard old calculation and start anew"""
+        self.match_status = HMRCMatchStatus(Decimal(0))
 
     def get_table_repr(self) -> Tuple[str, ...]:
         """Return Tuple representation of the transaction"""
@@ -205,6 +206,15 @@ class ShareReorg(TradeWithTableHeader):
             "N/A",
             "N/A",
             "N/A",
+        )
+
+    def __str__(self):
+        return (
+            f"Symbol: {self.ticker}\n"
+            f"Trade Date: {self.transaction_date.strftime('%d %b %Y')}\n"
+            f"Transaction Type: {self.transaction_type.value}\n"
+            f"Description: {self.description}\n"
+            f"\n{self.match_status.comment}"
         )
 
 
@@ -220,6 +230,14 @@ class Trade(TradeWithTableHeader):
 
     transaction_value: Money
     fee_and_tax: list[Money] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.match_status = HMRCMatchStatus(self.size)
+
+    def clear_calculation(self):
+        """discard old calculation and start anew"""
+        self.match_status = HMRCMatchStatus(self.size)
 
     def get_partial_value(self, qty: Decimal) -> Decimal:
         """return the gross value for partial share matching for this transaction"""

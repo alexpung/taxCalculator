@@ -4,8 +4,9 @@ from __future__ import annotations
 from decimal import Decimal
 
 from capital_gain import comments
+from capital_gain.comments import share_reorg_to_section104
 from capital_gain.exception import MixedTickerError
-from capital_gain.model import MatchType, Section104, Trade, TransactionType
+from capital_gain.model import MatchType, Section104, ShareReorg, Trade, TransactionType
 
 
 class CgtCalculator:
@@ -152,6 +153,17 @@ class CgtCalculator:
                         trade_cost_sell=transaction.get_partial_fee(matchable_shares),
                     )
                     + comment
+                )
+            elif (
+                transaction.transaction_type == TransactionType.SHARE_SPLIT
+                or transaction.transaction_type == TransactionType.SHARE_MERGE
+            ):
+                assert isinstance(transaction, ShareReorg)
+                comment = share_reorg_to_section104(transaction, self.section104)
+                self.section104.quantity = (
+                    self.section104.quantity
+                    * transaction.ratio.numerator
+                    / transaction.ratio.denominator
                 )
             if comment:
                 transaction.match_status.comment += comment
