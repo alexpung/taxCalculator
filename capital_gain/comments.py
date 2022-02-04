@@ -92,7 +92,7 @@ def share_reorg_to_section104(event: ShareReorg, section104: Section104):
     """Comment on changing section 104 pool due to share split/merge"""
     return (
         f"Share {event.ticker} split/merge at date {event.transaction_date} with ratio "
-        f"{event.ratio.numerator} to {event.ratio.denominator}.\n"
+        f"{event.ratio.denominator} to {event.ratio.numerator}.\n"
         f"Old quantity of Section 104 is {section104.quantity}\n"
         f"New quantity is now "
         f"{section104.quantity * event.ratio.numerator / event.ratio.denominator}\n"
