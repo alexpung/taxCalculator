@@ -1,9 +1,11 @@
 """ Strings representation of the comment section in transactions """
+from __future__ import annotations
 
 from decimal import Decimal
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
-from capital_gain.model import Section104, ShareReorg
+if TYPE_CHECKING:
+    from capital_gain.model import Section104, ShareReorg
 
 
 def add_to_section104(
