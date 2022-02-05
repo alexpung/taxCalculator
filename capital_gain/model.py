@@ -7,7 +7,7 @@ import datetime
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
-from typing import ClassVar, List, Tuple, Union
+from typing import ClassVar, List, Literal, Tuple, Union
 
 from iso4217 import Currency
 
@@ -133,6 +133,11 @@ class Transaction(ABC):
 class Dividend(Transaction):
     """Dataclass to store dividend information"""
 
+    transaction_type: Literal[
+        TransactionType.DIVIDEND,
+        TransactionType.WITHHOLDING,
+        TransactionType.DIVIDEND_IN_LIEU,
+    ]
     value: Money
     country: str
     description: str = field(default="")
@@ -185,6 +190,7 @@ class ShareReorg(TradeWithTableHeader):
     ratio: If there is a share split of 2 shares to 5, then the ratio would be 2.5
     """
 
+    transaction_type: Literal[TransactionType.SHARE_SPLIT, TransactionType.SHARE_MERGE]
     ratio: Fraction
     description: str = ""
     # just to store comments during calculation
@@ -231,6 +237,7 @@ class Trade(TradeWithTableHeader):
     here the convention is positive value means fee, and negative value mean credit
     """
 
+    transaction_type: Literal[TransactionType.BUY, TransactionType.SELL]
     transaction_value: Money
     fee_and_tax: list[Money] = field(default_factory=list)
 
