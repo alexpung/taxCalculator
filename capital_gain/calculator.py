@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 from decimal import Decimal
-
-# from fractions import Fraction
+from fractions import Fraction
 from typing import List, Union
 
 from capital_gain import comments
-from capital_gain.comments import share_reorg_to_section104
+from capital_gain.comments import share_adjustment, share_reorg_to_section104
 from capital_gain.exception import MixedTickerError
 from capital_gain.model import MatchType, Section104, ShareReorg, Trade, TransactionType
 
@@ -48,19 +47,49 @@ class CgtCalculator:
         buy_transaction: Trade,
         sell_transaction: Trade,
         match_type: MatchType,
+        # adjustment ratio due to stock split/merge in between
+        ratio: Fraction = Fraction(1),
     ) -> None:
         """Calculate capital gain if two transactions are matched with same day or
         bed and breakfast rules"""
-        to_match = min(
-            buy_transaction.match_status.unmatched,
-            sell_transaction.match_status.unmatched,
-        )
+        if buy_transaction.transaction_type != TransactionType.BUY:
+            raise ValueError(
+                f"Was matching with {buy_transaction.transaction_type},"
+                f" expect buy transaction"
+            )
+        if sell_transaction.transaction_type != TransactionType.SELL:
+            raise ValueError(
+                f"Was matching with {sell_transaction.transaction_type},"
+                f" expect sell transaction"
+            )
+        if buy_transaction.transaction_date > sell_transaction.transaction_date:
+            to_match = min(
+                sell_transaction.match_status.unmatched
+                * ratio.numerator
+                / ratio.denominator,
+                buy_transaction.match_status.unmatched,
+            )
+            to_match_sell = to_match / ratio.numerator * ratio.denominator
+            to_match_buy = to_match
+        else:
+            to_match = min(
+                buy_transaction.match_status.unmatched
+                * ratio.numerator
+                / ratio.denominator,
+                sell_transaction.match_status.unmatched,
+            )
+            to_match_sell = to_match
+            to_match_buy = to_match / ratio.numerator * ratio.denominator
         if to_match == 0:
             return
-        proceeds = sell_transaction.get_partial_value(to_match)
-        buy_cost = buy_transaction.get_partial_value(to_match)
-        trade_cost_buy = buy_transaction.get_partial_fee(to_match)
-        trade_cost_sell = sell_transaction.get_partial_fee(to_match)
+        if ratio != 1:
+            sell_transaction.match_status.comment += share_adjustment(
+                ratio, to_match_sell, to_match_buy
+            )
+        proceeds = sell_transaction.get_partial_value(to_match_sell)
+        buy_cost = buy_transaction.get_partial_value(to_match_buy)
+        trade_cost_buy = buy_transaction.get_partial_fee(to_match_buy)
+        trade_cost_sell = sell_transaction.get_partial_fee(to_match_sell)
         sell_transaction.match_status.allowable_cost += (
             buy_cost + trade_cost_buy + trade_cost_sell
         )
@@ -68,14 +97,14 @@ class CgtCalculator:
         sell_transaction.match_status.total_gain += capital_gain
         sell_transaction.match_status.comment += comments.capital_gain_calc(
             buy_transaction.transaction_id,
-            to_match,
+            to_match_sell,
             proceeds,
             buy_cost,
             trade_cost_buy,
             trade_cost_sell,
         )
-        buy_transaction.match_status.match(to_match, sell_transaction, match_type)
-        sell_transaction.match_status.match(to_match, buy_transaction, match_type)
+        buy_transaction.match_status.match(to_match_buy, sell_transaction, match_type)
+        sell_transaction.match_status.match(to_match_sell, buy_transaction, match_type)
 
     def match_same_day_disposal(self) -> None:
         """To match buy and sell transactions that occur in the same day"""
@@ -93,6 +122,25 @@ class CgtCalculator:
             for buy_transaction in matched_transactions_list:
                 self._match(buy_transaction, sell_transaction, MatchType.SAME_DAY)
 
+    def check_share_split(self, trade1: Trade, trade2: Trade) -> Fraction:
+        """For bed and breakfast matching, share split needs to be checked"""
+        corp_split_list = []
+        ratio = Fraction(1)
+        for corp_action in self.corp_action_list:
+            if (
+                trade2.transaction_date
+                < corp_action.transaction_date
+                < trade1.transaction_date
+            ) or (
+                trade2.transaction_date
+                > corp_action.transaction_date
+                > trade1.transaction_date
+            ):
+                corp_split_list.append(corp_action)
+        for split_action in corp_split_list:
+            ratio = ratio * split_action.ratio
+        return ratio
+
     def match_bed_and_breakfast_disposal(self) -> None:
         """To match buy transactions that occur within 30 days of a sell transaction"""
         for sell_transaction in [
@@ -109,8 +157,12 @@ class CgtCalculator:
                 and x.transaction_type == TransactionType.BUY
             ]
             for buy_transaction in matched_transactions_list:
+                ratio = self.check_share_split(buy_transaction, sell_transaction)
                 self._match(
-                    buy_transaction, sell_transaction, MatchType.BED_AND_BREAKFAST
+                    buy_transaction,
+                    sell_transaction,
+                    MatchType.BED_AND_BREAKFAST,
+                    ratio,
                 )
 
     def match_section104(self) -> None:

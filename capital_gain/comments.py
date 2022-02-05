@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from fractions import Fraction
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
@@ -13,10 +14,10 @@ def add_to_section104(
 ) -> str:
     """Comment when adding shares to the Section 104 pool"""
     return (
-        f"{qty:.2f} share(s) added to Section104 pool "
+        f"{qty} share(s) added to Section104 pool "
         f"with allowable cost {cost:.2f}.\n"
         f"New total number of share(s) for section 104 "
-        f"is {new_quantity:.2f}.\n"
+        f"is {new_quantity}.\n"
         f"New total allowable cost is {new_cost:.2f}\n\n"
     )
 
@@ -26,10 +27,10 @@ def remove_from_section104(
 ) -> str:
     """Comment when removing shares to the Section 104 pool"""
     return (
-        f"{qty:.2f} share(s) removed to Section104 pool "
+        f"{qty} share(s) removed to Section104 pool "
         f"with allowable cost £{cost:.2f}.\n"
         f"New total number of share(s) for section 104 "
-        f"is {new_quantity:.2f}.\n"
+        f"is {new_quantity}.\n"
         f"New total allowable cost is £{new_cost:.2f}\n\n"
     )
 
@@ -46,10 +47,10 @@ def capital_gain_calc(
     transaction_id: pass None if it is a section104 match
     """
     if transaction_id is None:
-        matching_comment = f"Matched section 104 holding with quantity {qty:.2f}.\n"
+        matching_comment = f"Matched section 104 holding with quantity {qty}.\n"
     else:
         matching_comment = (
-            f"Matched with transaction id {transaction_id} with quantity {qty:.2f}.\n"
+            f"Matched with transaction id {transaction_id} with quantity {qty}.\n"
         )
     buy_cost_comment = (
         f"Allowable dealing cost for buying the matched "
@@ -98,4 +99,12 @@ def share_reorg_to_section104(event: ShareReorg, section104: Section104):
         f"Old quantity of Section 104 is {section104.quantity}\n"
         f"New quantity is now "
         f"{section104.quantity * event.ratio.numerator / event.ratio.denominator}\n"
+    )
+
+
+def share_adjustment(ratio: Fraction, to_match_sell: Decimal, to_match_buy: Decimal):
+    """Comment when a share split occurs during bed and breakfast matching"""
+    return (
+        f"Acquisition of size {to_match_buy} is matched to disposal of "
+        f"size {to_match_sell} due to forward/reverse split with ratio {ratio}.\n"
     )

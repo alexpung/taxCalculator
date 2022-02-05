@@ -1,12 +1,13 @@
 """ testing for capital gain matching module """
 import datetime
 from decimal import Decimal
-from typing import Tuple
+from fractions import Fraction
+from typing import List, Tuple, Union
 import unittest
 
 from capital_gain.calculator import CgtCalculator
 from capital_gain.exception import MixedTickerError
-from capital_gain.model import MatchType, Money, Trade, TransactionType
+from capital_gain.model import MatchType, Money, ShareReorg, Trade, TransactionType
 
 
 class TestCalculator(unittest.TestCase):
@@ -34,7 +35,7 @@ class TestCalculator(unittest.TestCase):
 
     def test_unmatched_sell(self) -> None:
         """Test short sell"""
-        trades = [
+        trades: List[Union[Trade, ShareReorg]] = [
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 5),
@@ -62,7 +63,7 @@ class TestCalculator(unittest.TestCase):
 
         Expected result: Raise MixedTickerError since different Ticker is mixed in.
         """
-        trades = [
+        trades: List[Union[Trade, ShareReorg]] = [
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 5),
@@ -92,7 +93,7 @@ class TestCalculator(unittest.TestCase):
 
         Expected result: No MixedTickerError is raised
         """
-        trades = [
+        trades: List[Union[Trade, ShareReorg]] = [
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 5),
@@ -126,7 +127,7 @@ class TestCalculator(unittest.TestCase):
         Expected result: 3rd, 4th and 5th transaction will match and leaving 30 shares
         that were sold unmatched
         """
-        trades = [
+        trades: List[Union[Trade, ShareReorg]] = [
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 5),
@@ -206,7 +207,7 @@ class TestCalculator(unittest.TestCase):
         6th and 7th (partial match) transaction will match with 5th transaction
         4th and 8th transaction will not match as they are outside 30 days limit
         """
-        trades = [
+        trades: List[Union[Trade, ShareReorg]] = [
             Trade(
                 "AMD",
                 datetime.date(2021, 10, 5),
@@ -306,7 +307,7 @@ class TestCalculator(unittest.TestCase):
 
         Expected result: Transactions are sorted in chronological order
         """
-        trades = [
+        trades: List[Union[Trade, ShareReorg]] = [
             Trade(
                 "AMD",
                 datetime.date(2021, 1, 5),
@@ -385,7 +386,7 @@ class TestCalculator(unittest.TestCase):
         (£2,080 disposal proceeds), incurring dealing costs of
         £105 including VAT."""
 
-        trades = [
+        trades: List[Union[Trade, ShareReorg]] = [
             Trade(
                 "Lobster plc",
                 datetime.date(2014, 4, 1),
@@ -425,3 +426,56 @@ class TestCalculator(unittest.TestCase):
         self.assertEqual(test.section104.quantity, Decimal(400))
         self.assertEqual(int(test.transaction_list[2].match_status.total_gain), 329)
         self.assertEqual(int(test.transaction_list[3].match_status.total_gain), 300)
+
+    def test_share_split_bed_and_breakfast(self):
+        """Testing an extreme case where 2 stock split occurs
+        during bed and breakfast"""
+        trades = [
+            Trade(
+                "Lobster plc",
+                datetime.date(2020, 5, 1),
+                TransactionType.BUY,
+                Decimal(2000),
+                Money(Decimal(8000)),
+            ),
+            Trade(
+                "Lobster plc",
+                datetime.date(2020, 5, 2),
+                TransactionType.SELL,
+                Decimal(1150),
+                Money(Decimal(4600)),
+            ),
+            Trade(
+                "Lobster plc",
+                datetime.date(2020, 5, 3),
+                TransactionType.BUY,
+                Decimal(100),
+                Money(Decimal(300)),
+            ),
+            ShareReorg(
+                "Lobster plc",
+                datetime.date(2020, 5, 3),
+                TransactionType.SHARE_SPLIT,
+                Decimal(0),
+                Fraction(3),
+            ),
+            ShareReorg(
+                "Lobster plc",
+                datetime.date(2020, 5, 4),
+                TransactionType.SHARE_SPLIT,
+                Decimal(0),
+                Fraction(2),
+            ),
+            Trade(
+                "Lobster plc",
+                datetime.date(2020, 5, 5),
+                TransactionType.BUY,
+                Decimal(5400),
+                Money(Decimal(1800)),
+            ),
+        ]
+        test = CgtCalculator(trades)
+        section104 = test.calculate_tax()
+        self.assertEqual(1900, trades[1].match_status.total_gain)
+        self.assertEqual(1850, section104.quantity)
+        self.assertEqual(7400, section104.cost)
