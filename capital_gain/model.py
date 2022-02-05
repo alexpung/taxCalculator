@@ -113,10 +113,21 @@ class Transaction(ABC):
         self.transaction_id = Trade.transaction_id_counter
         Trade.transaction_id_counter += 1
 
-    def __lt__(self, other: Trade) -> bool:
+    def __lt__(self, other: Transaction) -> bool:
+        """For sorting of Transaction for gain calculation"""
+        # Corporate action take effect at the beginning of the day
+        # if both are Corporate action then the order does not matter
+        if self.transaction_date == other.transaction_date and isinstance(
+            self, ShareReorg
+        ):
+            return True
         return self.transaction_date < other.transaction_date
 
-    def __gt__(self, other: Trade) -> bool:
+    def __gt__(self, other: Transaction) -> bool:
+        if self.transaction_date == other.transaction_date and isinstance(
+            other, ShareReorg
+        ):
+            return False
         return self.transaction_date > other.transaction_date
 
     @abstractmethod
