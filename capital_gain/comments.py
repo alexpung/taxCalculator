@@ -1,12 +1,10 @@
 """ Strings representation of the comment section in transactions """
 from __future__ import annotations
 
+import datetime
 from decimal import Decimal
 from fractions import Fraction
-from typing import TYPE_CHECKING, Union
-
-if TYPE_CHECKING:
-    from capital_gain.model import Section104, ShareReorg
+from typing import Union
 
 
 def add_to_section104(
@@ -27,7 +25,7 @@ def remove_from_section104(
 ) -> str:
     """Comment when removing shares to the Section 104 pool"""
     return (
-        f"{qty} share(s) removed to Section104 pool "
+        f"{qty} share(s) removed from Section104 pool "
         f"with allowable cost £{cost:.2f}.\n"
         f"New total number of share(s) for section 104 "
         f"is {new_quantity}.\n"
@@ -91,14 +89,20 @@ def unmatched_shares(share: Decimal) -> str:
     return f"Sold shares not yet matched (short sale): {share:.2f}\n"
 
 
-def share_reorg_to_section104(event: ShareReorg, section104: Section104):
+def share_reorg_to_section104(
+    ticker: str,
+    transaction_date: datetime.date,
+    ratio: Fraction,
+    old_qty: Decimal,
+    new_qty: Decimal,
+):
     """Comment on changing section 104 pool due to share split/merge"""
     return (
-        f"Share {event.ticker} split/merge at date {event.transaction_date} with ratio "
-        f"{event.ratio.denominator} to {event.ratio.numerator}.\n"
-        f"Old quantity of Section 104 is {section104.quantity}\n"
+        f"Share {ticker} split/merge at date {transaction_date} with ratio "
+        f"{ratio.denominator} to {ratio.numerator}.\n"
+        f"Old quantity of Section 104 is {old_qty}\n"
         f"New quantity is now "
-        f"{section104.quantity * event.ratio.numerator / event.ratio.denominator}\n"
+        f"{new_qty}\n"
     )
 
 
