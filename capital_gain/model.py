@@ -325,8 +325,21 @@ class Section104:
     """Data class for storing section 104 pool of shares"""
 
     ticker: str
-    quantity: Decimal
+    _quantity: Decimal
     cost: Decimal
+
+    @property
+    def quantity(self):
+        """property for the number of shares in section 104"""
+        return self._quantity
+
+    @quantity.setter
+    def quantity(self, value: Decimal):
+        """setter to round off residue shares due to rounding"""
+        if value < 0.0001:
+            self._quantity = Decimal(0)
+        else:
+            self._quantity = value
 
     def add_to_section104(self, qty: Decimal, cost: Decimal) -> str:
         """Handle adding shares to section 104 pool and return a comment string"""

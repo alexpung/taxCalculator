@@ -33,10 +33,8 @@ To set up:
 
 Design notes:
 
-1.  When a share forward or reverse split occurs it is assumed that the decimal shares will be lost and be given cash.
-    For example when you have 11 shares then a 3-for-2 splits occurs, then it is assumed you would have 16 shares.
-    Or when you have the same 11 shares and the company undergo a 1-for-2 reverse split. Then the app would assume you to have 5 shares.
-    This is really corner case though and should not happen very often.
+1.  When a share forward or reverse split occurs it is assumed that the decimal shares will be kept. But it is possible that
+    the decimal shares are lost and be given cash in lieu.
 2.  Rounding problem:
     - Consider the following scenario:
     1. Long time ago you bought 100 shares of Company 'XYZ'
@@ -53,6 +51,6 @@ Design notes:
           Decimal('1E-26')
           >>> x == 0
           False
-    - The share holding is set to 0 by:
+    - The share holding is set to 0 by: (same for section 104 holding)
     -     if value < 0.0001:
               self.unmatched = Decimal(0)
