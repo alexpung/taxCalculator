@@ -78,11 +78,25 @@ class HMRCMatchRecord:
 class HMRCMatchStatus:
     """To keep track of buy and sell matching during calculation"""
 
-    unmatched: Decimal
+    _unmatched: Decimal
     record: list[HMRCMatchRecord] = field(default_factory=list)
     comment: str = ""
     total_gain: Decimal = Decimal(0)
     allowable_cost: Decimal = Decimal(0)
+
+    @property
+    def unmatched(self) -> Decimal:
+        """setting the number of shares that is not accounted for"""
+        return self._unmatched
+
+    @unmatched.setter
+    def unmatched(self, value: Decimal):
+        """To remove any residue value when the remaining shares should be 0
+        e.g. 100-100/3-100/3-100/3 != 0"""
+        if value < 0.0001:
+            self._unmatched = Decimal(0)
+        else:
+            self._unmatched = value
 
     def match(
         self,
