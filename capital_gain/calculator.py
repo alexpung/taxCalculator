@@ -21,16 +21,7 @@ class CgtCalculator:
             transaction.clear_calculation()
             if transaction.ticker != ticker:
                 raise MixedTickerError(transaction.ticker, ticker)
-        self.transaction_list = [
-            transaction
-            for transaction in transaction_list
-            if isinstance(transaction, Trade)
-        ]
-        self.corp_action_list = [
-            transaction
-            for transaction in transaction_list
-            if isinstance(transaction, ShareReorg)
-        ]
+        self.transaction_list = transaction_list
         self.transaction_list.sort()
         self.section104 = Section104(ticker, Decimal(0), Decimal(0))
 
@@ -126,15 +117,21 @@ class CgtCalculator:
         """For bed and breakfast matching, share split needs to be checked"""
         corp_split_list = []
         ratio = Fraction(1)
-        for corp_action in self.corp_action_list:
+        corp_action_list = [
+            transaction
+            for transaction in self.transaction_list
+            if isinstance(transaction, ShareReorg)
+        ]
+        for corp_action in corp_action_list:
+            # note the equal sign: A corp action happens before a trade on the same day
             if (
                 trade2.transaction_date
                 < corp_action.transaction_date
-                < trade1.transaction_date
+                <= trade1.transaction_date
             ) or (
                 trade2.transaction_date
                 > corp_action.transaction_date
-                > trade1.transaction_date
+                >= trade1.transaction_date
             ):
                 corp_split_list.append(corp_action)
         for split_action in corp_split_list:
@@ -218,16 +215,20 @@ class CgtCalculator:
                     )
                     + comment
                 )
-            elif (
-                transaction.transaction_type == TransactionType.SHARE_SPLIT
-                or transaction.transaction_type == TransactionType.SHARE_MERGE
-            ):
-                assert isinstance(transaction, ShareReorg)
-                comment = share_reorg_to_section104(transaction, self.section104)
-                self.section104.quantity = (
+            elif isinstance(transaction, ShareReorg):
+                old_qty = self.section104.quantity
+                new_qty = Decimal(
                     self.section104.quantity
                     * transaction.ratio.numerator
                     / transaction.ratio.denominator
                 )
+                comment = share_reorg_to_section104(
+                    transaction.ticker,
+                    transaction.transaction_date,
+                    transaction.ratio,
+                    old_qty,
+                    new_qty,
+                )
+                self.section104.quantity = new_qty
             if comment:
                 transaction.match_status.comment += comment

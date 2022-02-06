@@ -14,8 +14,10 @@ class TestCalculator(unittest.TestCase):
     """To test that capital gain is calculated correctly"""
 
     @staticmethod
-    def _sum_match_type(transaction: Trade) -> Tuple[Decimal, Decimal, Decimal]:
-        bednbreakfast = sum(
+    def _sum_match_type(
+        transaction: Union[Trade, ShareReorg]
+    ) -> Tuple[Decimal, Decimal, Decimal]:
+        bed_and_breakfast = sum(
             [
                 match.size
                 for match in transaction.match_status.record
@@ -23,7 +25,7 @@ class TestCalculator(unittest.TestCase):
             ],
             Decimal(0),
         )
-        sameday = sum(
+        same_day = sum(
             [
                 match.size
                 for match in transaction.match_status.record
@@ -31,7 +33,7 @@ class TestCalculator(unittest.TestCase):
             ],
             Decimal(0),
         )
-        return transaction.match_status.unmatched, sameday, bednbreakfast
+        return transaction.match_status.unmatched, same_day, bed_and_breakfast
 
     def test_unmatched_sell(self) -> None:
         """Test short sell"""
@@ -174,27 +176,27 @@ class TestCalculator(unittest.TestCase):
         test = CgtCalculator(trades)
         test.match_same_day_disposal()
         self.assertEqual(
-            self._sum_match_type(test.transaction_list[0]),
+            self._sum_match_type(trades[0]),
             (Decimal(100), Decimal(0), Decimal(0)),
         )
         self.assertEqual(
-            self._sum_match_type(test.transaction_list[1]),
+            self._sum_match_type(trades[1]),
             (Decimal(110), Decimal(0), Decimal(0)),
         )
         self.assertEqual(
-            self._sum_match_type(test.transaction_list[2]),
+            self._sum_match_type(trades[2]),
             (Decimal(0), Decimal(100), Decimal(0)),
         )
         self.assertEqual(
-            self._sum_match_type(test.transaction_list[3]),
+            self._sum_match_type(trades[3]),
             (Decimal(30), Decimal(120), Decimal(0)),
         )
         self.assertEqual(
-            self._sum_match_type(test.transaction_list[4]),
+            self._sum_match_type(trades[4]),
             (Decimal(0), Decimal(20), Decimal(0)),
         )
         self.assertEqual(
-            self._sum_match_type(test.transaction_list[5]),
+            self._sum_match_type(trades[5]),
             (Decimal(100), Decimal(0), Decimal(0)),
         )
         self.assertEqual(test.transaction_list[3].match_status.total_gain, 800)
@@ -306,6 +308,7 @@ class TestCalculator(unittest.TestCase):
         """To test the sort function sort transaction list by date
 
         Expected result: Transactions are sorted in chronological order
+        Corporate split/merge happen earlier than trade in the same day
         """
         trades: List[Union[Trade, ShareReorg]] = [
             Trade(
@@ -321,6 +324,13 @@ class TestCalculator(unittest.TestCase):
                 TransactionType.SELL,
                 Decimal(50),
                 Money(Decimal(10000)),
+            ),
+            ShareReorg(
+                "AMD",
+                datetime.date(2022, 12, 6),
+                TransactionType.SHARE_SPLIT,
+                Decimal(600),
+                Fraction(2),
             ),
             Trade(
                 "AMD",
@@ -367,8 +377,9 @@ class TestCalculator(unittest.TestCase):
         self.assertEqual(
             datetime.date(2021, 12, 8), test.transaction_list[4].transaction_date
         )
+        self.assertIsInstance(test.transaction_list[5], ShareReorg)
         self.assertEqual(
-            datetime.date(2022, 12, 6), test.transaction_list[5].transaction_date
+            datetime.date(2022, 12, 6), test.transaction_list[6].transaction_date
         )
 
     def test_hmrc_example3(self) -> None:
@@ -429,28 +440,37 @@ class TestCalculator(unittest.TestCase):
 
     def test_share_split_bed_and_breakfast(self):
         """Testing an extreme case where 2 stock split occurs
-        during bed and breakfast"""
+        during bed and breakfast
+        expected result:
+        section104: (2000 - 216.666667) * 3 * 2 = 10700
+        cgt of the sell: bnb match 33.33 shares with trade#3 £100 +
+        bnb match with trade#6 (5400 buy shares = 900 sell shares) = £33.33 + £1800
+        no gain for section104 match for the remaining 216.66... shares
+        remaining cost section 104 pool:
+        150 shares are removed from 2000 shares
+        the remaining cost is 8000 - 8000 * 216.666/2000 = £7133.33...
+        """
         trades = [
             Trade(
-                "Lobster plc",
+                "Lobster plc",  # £4 per share
                 datetime.date(2020, 5, 1),
                 TransactionType.BUY,
                 Decimal(2000),
                 Money(Decimal(8000)),
             ),
             Trade(
-                "Lobster plc",
+                "Lobster plc",  # £4 per share
                 datetime.date(2020, 5, 2),
                 TransactionType.SELL,
                 Decimal(1150),
                 Money(Decimal(4600)),
             ),
             Trade(
-                "Lobster plc",
+                "Lobster plc",  # Share already split here, pre-split £3 per share
                 datetime.date(2020, 5, 3),
                 TransactionType.BUY,
                 Decimal(100),
-                Money(Decimal(300)),
+                Money(Decimal(100)),
             ),
             ShareReorg(
                 "Lobster plc",
@@ -467,7 +487,7 @@ class TestCalculator(unittest.TestCase):
                 Fraction(2),
             ),
             Trade(
-                "Lobster plc",
+                "Lobster plc",  # £2 per share pre-split
                 datetime.date(2020, 5, 5),
                 TransactionType.BUY,
                 Decimal(5400),
@@ -476,6 +496,46 @@ class TestCalculator(unittest.TestCase):
         ]
         test = CgtCalculator(trades)
         section104 = test.calculate_tax()
-        self.assertEqual(1900, trades[1].match_status.total_gain)
-        self.assertEqual(1850, section104.quantity)
-        self.assertEqual(7400, section104.cost)
+        self.assertAlmostEqual(
+            Decimal("1833.3333333"), trades[1].match_status.total_gain
+        )
+        self.assertEqual(10700, section104.quantity)
+        self.assertAlmostEqual(Decimal("7133.3333333"), section104.cost)
+
+    def test_share_split_section104(self):
+        """Testing section104 handling when stock split occurs"""
+        trades = [
+            Trade(
+                "Lobster plc",
+                datetime.date(2020, 5, 1),
+                TransactionType.BUY,
+                Decimal(2000),
+                Money(Decimal(12000)),
+            ),
+            ShareReorg(
+                "Lobster plc",
+                datetime.date(2020, 5, 3),
+                TransactionType.SHARE_SPLIT,
+                Decimal(0),
+                Fraction(1, 2),
+            ),
+            ShareReorg(
+                "Lobster plc",
+                datetime.date(2020, 5, 4),
+                TransactionType.SHARE_SPLIT,
+                Decimal(0),
+                Fraction(6),
+            ),
+            Trade(
+                "Lobster plc",
+                datetime.date(2020, 6, 2),
+                TransactionType.SELL,
+                Decimal(5400),
+                Money(Decimal(21600)),
+            ),
+        ]
+        test = CgtCalculator(trades)
+        section104 = test.calculate_tax()
+        self.assertEqual(10800, trades[3].match_status.total_gain)
+        self.assertEqual(600, section104.quantity)
+        self.assertEqual(1200, section104.cost)
