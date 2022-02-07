@@ -50,22 +50,20 @@ class Money:
         return self.value * self.exchange_rate
 
     def __str__(self) -> str:
-        if self.note:
-            prefix = f"{self.note}: "
-        else:
-            prefix = ""
-        if self.currency == Currency("GBP"):
-            fx_suffix = ""
-        else:
-            fx_suffix = (
+        prefix = f"{self.note}: " if self.note else ""
+        fx_suffix = (
+            (
                 f" with exchange rate {self.exchange_rate} "
                 f"converted to £{self.get_value():.2f}"
             )
+            if self.currency != Currency("GBP")
+            else ""
+        )
         return prefix + f"{self.currency.code}{self.value:.2f}" + fx_suffix + "\n"
 
 
 @dataclass
-class HMRCMatchRecord:
+class CalculationDetails:
     """Record of whether part or all of the transaction belongs to same day/
     bed and breakfast or section 104"""
 
@@ -75,11 +73,11 @@ class HMRCMatchRecord:
 
 
 @dataclass
-class HMRCMatchStatus:
+class CalculationStatus:
     """To keep track of buy and sell matching during calculation"""
 
     _unmatched: Decimal
-    record: list[HMRCMatchRecord] = field(default_factory=list)
+    record: list[CalculationDetails] = field(default_factory=list)
     comment: str = ""
     total_gain: Decimal = Decimal(0)
     allowable_cost: Decimal = Decimal(0)
@@ -108,7 +106,9 @@ class HMRCMatchStatus:
         if size > self.unmatched:
             raise OverMatchError(self.unmatched, size)
         else:
-            self.record.append(HMRCMatchRecord(matched_transaction, size, match_type))
+            self.record.append(
+                CalculationDetails(matched_transaction, size, match_type)
+            )
             self.unmatched -= size
 
 
@@ -196,7 +196,7 @@ class TradeWithTableHeader(Transaction, ABC):
     """Abstract class with table header for trade data display"""
 
     size: Decimal
-    match_status: HMRCMatchStatus = field(init=False)
+    match_status: CalculationStatus = field(init=False)
     table_header: ClassVar = [
         "ID",
         "Symbol",
@@ -222,12 +222,12 @@ class ShareReorg(TradeWithTableHeader):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.match_status = HMRCMatchStatus(Decimal(0))
+        self.match_status = CalculationStatus(Decimal(0))
 
     # cannot just call __post_init__ as trade ID do not change
     def clear_calculation(self):
         """discard old calculation and start anew"""
-        self.match_status = HMRCMatchStatus(Decimal(0))
+        self.match_status = CalculationStatus(Decimal(0))
 
     def get_table_repr(self) -> Tuple[str, ...]:
         """Return Tuple representation of the transaction"""
@@ -268,11 +268,11 @@ class Trade(TradeWithTableHeader):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.match_status = HMRCMatchStatus(self.size)
+        self.match_status = CalculationStatus(self.size)
 
     def clear_calculation(self):
         """discard old calculation and start anew"""
-        self.match_status = HMRCMatchStatus(self.size)
+        self.match_status = CalculationStatus(self.size)
 
     def get_partial_value(self, qty: Decimal) -> Decimal:
         """return the gross value for partial share matching for this transaction"""
