@@ -22,7 +22,7 @@ To help report UK tax for dividend and capital gain.
 
 Known limitation:
 
-1. Corporate Action is not handled yet
+1. ~~Corporate Action is not handled yet~~ Now support forward split and reverse split
 2. Most of the GUI interface is not implemented yet
 
 This project use Poetry to manage dependency.
