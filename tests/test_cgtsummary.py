@@ -5,7 +5,7 @@ from decimal import Decimal
 import unittest
 
 from capital_gain.calculator import CgtCalculator
-from capital_gain.capital_summary import CgtTaxSummary
+import capital_gain.capital_summary as summary
 from capital_gain.model import Money, Trade, TransactionType
 
 
@@ -63,31 +63,29 @@ class TestCgtSummary(unittest.TestCase):
         for trade in trades:
             trade_bucket[trade.ticker].append(trade)
         for _, trade_list in trade_bucket.items():
-            CgtCalculator(trade_list).calculate_tax()
+            CgtCalculator(trade_list).calculate_tax()  # type: ignore
         self.assertEqual(
             3,
-            CgtTaxSummary.get_number_of_disposal(trades, tax_start_date, tax_end_date),
+            summary.get_number_of_disposal(trades, tax_start_date, tax_end_date),
         )
         # share cost = 15000 fee = 175, total allowable cost = 15175
         self.assertEqual(
             15175,
-            CgtTaxSummary.get_allowable_cost(trades, tax_start_date, tax_end_date),
+            summary.get_allowable_cost(trades, tax_start_date, tax_end_date),
         )
         # (15000-10000-50-50) + (5000-10) - 3030
         self.assertEqual(
             6860,
-            CgtTaxSummary.get_total_gain_exclude_loss(
-                trades, tax_start_date, tax_end_date
-            ),
+            summary.get_total_gain_exclude_loss(trades, tax_start_date, tax_end_date),
         )
         # 1500 - 2000 - 15 - 20
         self.assertEqual(
-            -535, CgtTaxSummary.get_capital_loss(trades, tax_start_date, tax_end_date)
+            -535, summary.get_capital_loss(trades, tax_start_date, tax_end_date)
         )
         # 15000 + 5000 + 1500
         self.assertEqual(
             21500,
-            CgtTaxSummary.get_disposal_proceeds(trades, tax_start_date, tax_end_date),
+            summary.get_disposal_proceeds(trades, tax_start_date, tax_end_date),
         )
 
     def test_date_range(self) -> None:
@@ -141,29 +139,27 @@ class TestCgtSummary(unittest.TestCase):
         for trade in trades:
             trade_bucket[trade.ticker].append(trade)
         for _, trade_list in trade_bucket.items():
-            CgtCalculator(trade_list).calculate_tax()
+            CgtCalculator(trade_list).calculate_tax()  # type: ignore
         self.assertEqual(
             2,
-            CgtTaxSummary.get_number_of_disposal(trades, tax_start_date, tax_end_date),
+            summary.get_number_of_disposal(trades, tax_start_date, tax_end_date),
         )
         # share cost = 13000 fee = 140, total allowable cost = 13140
         self.assertEqual(
             13140,
-            CgtTaxSummary.get_allowable_cost(trades, tax_start_date, tax_end_date),
+            summary.get_allowable_cost(trades, tax_start_date, tax_end_date),
         )
         # (15000-10000-50-50) + (5000-10) - 3030
         self.assertEqual(
             6860,
-            CgtTaxSummary.get_total_gain_exclude_loss(
-                trades, tax_start_date, tax_end_date
-            ),
+            summary.get_total_gain_exclude_loss(trades, tax_start_date, tax_end_date),
         )
         # the disposal with capital loss is outside tax date range, so 0
         self.assertEqual(
-            0, CgtTaxSummary.get_capital_loss(trades, tax_start_date, tax_end_date)
+            0, summary.get_capital_loss(trades, tax_start_date, tax_end_date)
         )
         # 15000 + 5000 (1500 is outside date range)
         self.assertEqual(
             20000,
-            CgtTaxSummary.get_disposal_proceeds(trades, tax_start_date, tax_end_date),
+            summary.get_disposal_proceeds(trades, tax_start_date, tax_end_date),
         )
