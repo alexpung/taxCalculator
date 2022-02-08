@@ -6,7 +6,7 @@ import unittest
 from iso4217 import Currency
 
 from capital_gain.dividend_summary import DividendSummary
-from capital_gain.model import Dividend, Money, TransactionType
+from capital_gain.model import Dividend, DividendType, Money
 
 
 class TestCalculator(unittest.TestCase):
@@ -18,63 +18,63 @@ class TestCalculator(unittest.TestCase):
             Dividend(
                 "ABC",
                 datetime.date(2021, 4, 5),
-                TransactionType.DIVIDEND,
+                DividendType.DIVIDEND,
                 Money(Decimal(100), Decimal("0.5"), Currency("USD")),
                 "USA",
             ),
             Dividend(
                 "ABC",
                 datetime.date(2021, 4, 6),
-                TransactionType.DIVIDEND,
+                DividendType.DIVIDEND,
                 Money(Decimal(200), Decimal("0.5"), Currency("USD")),
                 "USA",
             ),
             Dividend(
                 "ABC",
                 datetime.date(2021, 4, 6),
-                TransactionType.WITHHOLDING,
+                DividendType.WITHHOLDING,
                 Money(Decimal(20), Decimal("0.5"), Currency("USD")),
                 "USA",
             ),
             Dividend(
                 "EFG",
                 datetime.date(2021, 5, 5),
-                TransactionType.DIVIDEND,
+                DividendType.DIVIDEND,
                 Money(Decimal(250), Decimal("2"), Currency("CAD")),
                 "CAN",
             ),
             Dividend(
                 "EFG",
                 datetime.date(2021, 8, 5),
-                TransactionType.DIVIDEND,
+                DividendType.DIVIDEND,
                 Money(Decimal(500), Decimal("2"), Currency("CAD")),
                 "CAN",
             ),
             Dividend(
                 "EFG",
                 datetime.date(2021, 8, 5),
-                TransactionType.WITHHOLDING,
+                DividendType.WITHHOLDING,
                 Money(Decimal(200), Decimal("2"), Currency("CAD")),
                 "CAN",
             ),
             Dividend(
                 "GHI",
                 datetime.date(2021, 4, 20),
-                TransactionType.DIVIDEND_IN_LIEU,
+                DividendType.DIVIDEND_IN_LIEU,
                 Money(Decimal(100), Decimal("0.2"), Currency("HKD")),
                 "HKG",
             ),
             Dividend(
                 "GHI",
                 datetime.date(2022, 4, 5),
-                TransactionType.DIVIDEND,
+                DividendType.DIVIDEND,
                 Money(Decimal(200), Decimal("0.2"), Currency("HKD")),
                 "HKG",
             ),
             Dividend(
                 "GHI",
                 datetime.date(2022, 4, 6),
-                TransactionType.DIVIDEND,
+                DividendType.DIVIDEND,
                 Money(Decimal(300), Decimal("0.2"), Currency("HKD")),
                 "HKG",
             ),

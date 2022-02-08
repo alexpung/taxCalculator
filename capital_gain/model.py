@@ -7,22 +7,24 @@ import datetime
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
-from typing import ClassVar, List, Literal, Tuple, Union
+from typing import ClassVar
 
 from iso4217 import Currency
 
-from capital_gain import comments
-from capital_gain.exception import OverMatchError
+from .exception import OverMatchError
 
 
-class TransactionType(Enum):
-    """Enum of type of transactions"""
+class CorporateActionType(Enum):
+    """Enum of type of corporate actions"""
 
-    BUY = "BUY"
-    SELL = "SELL"
     SHARE_SPLIT = "Forward Split"
     SHARE_MERGE = "Reverse Split"
     CORP_ACTION_OTHER = "Other Corporate Action"
+
+
+class DividendType(Enum):
+    """Type of dividend transactions"""
+
     WITHHOLDING = "Withholding Tax"
     DIVIDEND = "Dividends"
     DIVIDEND_IN_LIEU = "Payment In Lieu Of Dividends"
@@ -63,63 +65,34 @@ class Money:
 
 
 @dataclass
-class CalculationDetails:
-    """Record of whether part or all of the transaction belongs to same day/
-    bed and breakfast or section 104"""
-
-    transaction: Trade | None
-    size: Decimal
-    type: MatchType
-
-
-@dataclass
 class CalculationStatus:
     """To keep track of buy and sell matching during calculation"""
 
-    _unmatched: Decimal
-    record: list[CalculationDetails] = field(default_factory=list)
+    unmatched: Decimal
     comment: str = ""
     total_gain: Decimal = Decimal(0)
     allowable_cost: Decimal = Decimal(0)
 
-    @property
-    def unmatched(self) -> Decimal:
-        """setting the number of shares that is not accounted for"""
-        return self._unmatched
+    def reset_calculation(self, size: Decimal):
+        """clear the calculation and reset unmatched size"""
+        self.unmatched = size
+        self.comment = ""
 
-    @unmatched.setter
-    def unmatched(self, value: Decimal):
-        """To remove any residue value when the remaining shares should be 0
-        e.g. 100-100/3-100/3-100/3 != 0"""
-        if value < 0.0001:
-            self._unmatched = Decimal(0)
-        else:
-            self._unmatched = value
-
-    def match(
-        self,
-        size: Decimal,
-        matched_transaction: Union[Trade, None],
-        match_type: MatchType,
-    ) -> None:
+    def match(self, size: Decimal) -> None:
         """Update the transaction record when it is matched"""
         if size > self.unmatched:
             raise OverMatchError(self.unmatched, size)
         else:
-            self.record.append(
-                CalculationDetails(matched_transaction, size, match_type)
-            )
             self.unmatched -= size
 
 
-# mypy false positive https://github.com/python/mypy/issues/5374 so ignore
-@dataclass  # type:ignore
+# mypy bug #5374
+@dataclass  # type: ignore
 class Transaction(ABC):
     """base class for all transactions"""
 
     ticker: str
     transaction_date: datetime.date
-    transaction_type: TransactionType
     transaction_id: int = field(init=False)
     transaction_id_counter: ClassVar[int] = 1
 
@@ -145,102 +118,43 @@ class Transaction(ABC):
         return self.transaction_date > other.transaction_date
 
     @abstractmethod
-    def get_table_repr(self):
-        """subclass should return a row representation for displaying in a table"""
-
-    @property
-    @abstractmethod
-    def table_header(self) -> List[str]:
-        """subclass should show the header when displaying in a table"""
+    def match_with_section104(self, section_104: Section104) -> None:
+        """Subclass should implement this for handling of section 104"""
 
 
 @dataclass
-class Dividend(Transaction):
+class Dividend:
     """Dataclass to store dividend information"""
 
-    transaction_type: Literal[
-        TransactionType.DIVIDEND,
-        TransactionType.WITHHOLDING,
-        TransactionType.DIVIDEND_IN_LIEU,
-    ]
+    ticker: str
+    transaction_date: datetime.date
+    transaction_id: int = field(init=False)
+    transaction_id_counter: ClassVar[int] = 1
+    transaction_type: DividendType
     value: Money
     country: str
     description: str = field(default="")
-    table_header = [
-        "ticker",
-        "description",
-        "transaction date",
-        "value",
-        "currency",
-        "exchange rate",
-        "value in sterling",
-        "country",
-    ]
 
-    def get_table_repr(self):
-        """return data to display in the table"""
-        return (
-            self.ticker,
-            self.description,
-            self.transaction_date,
-            self.value.value,
-            self.value.currency,
-            self.value.exchange_rate,
-            self.value.get_value(),
-            self.country,
-        )
-
-
-@dataclass  # type:ignore
-class TradeWithTableHeader(Transaction, ABC):
-    """Abstract class with table header for trade data display"""
-
-    size: Decimal
-    match_status: CalculationStatus = field(init=False)
-    table_header: ClassVar = [
-        "ID",
-        "Symbol",
-        "Transaction Date",
-        "Transaction Type",
-        "Quantity",
-        "Gross Value",
-        "Allowable fees and Taxes",
-        "Capital gain (loss)",
-    ]
+    def __post_init__(self) -> None:
+        self.transaction_id = Trade.transaction_id_counter
+        Trade.transaction_id_counter += 1
 
 
 @dataclass
-class ShareReorg(TradeWithTableHeader):
+class ShareReorg(Transaction):
     """Dataclass to store share split and merge events
     ratio: If there is a share split of 2 shares to 5, then the ratio would be 2.5
     """
 
-    transaction_type: Literal[TransactionType.SHARE_SPLIT, TransactionType.SHARE_MERGE]
-    ratio: Fraction
+    transaction_type: CorporateActionType
+    size: Decimal
+    ratio: Fraction = Fraction(1)
     description: str = ""
-    # just to store comments during calculation
+    comment: str = ""
 
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        self.match_status = CalculationStatus(Decimal(0))
-
-    # cannot just call __post_init__ as trade ID do not change
     def clear_calculation(self):
         """discard old calculation and start anew"""
-        self.match_status = CalculationStatus(Decimal(0))
-
-    def get_table_repr(self) -> Tuple[str, ...]:
-        """Return Tuple representation of the transaction"""
-        return (
-            str(self.transaction_id),
-            str(self.ticker),
-            str(self.transaction_date.strftime("%d %b %Y")),
-            str(self.transaction_type.value),
-            f"{self.size:.2f}",
-            "N/A",
-            "N/A",
-            "N/A",
-        )
+        self.comment = ""
 
     def __str__(self):
         return (
@@ -248,12 +162,28 @@ class ShareReorg(TradeWithTableHeader):
             f"Trade Date: {self.transaction_date.strftime('%d %b %Y')}\n"
             f"Transaction Type: {self.transaction_type.value}\n"
             f"Description: {self.description}\n"
-            f"\n{self.match_status.comment}"
+            f"\n{self.comment}"
+        )
+
+    def match_with_section104(self, section_104: Section104) -> None:
+        """Changing section 104 pool due to share split/merge"""
+        old_qty = section_104.quantity
+        section_104.quantity = (
+            section_104.quantity
+            * Decimal(self.ratio.numerator)
+            / Decimal(self.ratio.denominator)
+        )
+        self.comment += (
+            f"Share {self.ticker} split/merge at date {self.transaction_date} with "
+            f"ratio {self.ratio.denominator} to {self.ratio.numerator}.\n"
+            f"Old quantity of Section 104 is {old_qty}\n"
+            f"New quantity is now "
+            f"{section_104.quantity}\n"
         )
 
 
-@dataclass
-class Trade(TradeWithTableHeader):
+@dataclass  # type: ignore
+class Trade(Transaction, ABC):
     """Dataclass to store transaction
     ticker: A string represent the symbol of the security
     size: Number of shares if buy/sell.
@@ -262,17 +192,23 @@ class Trade(TradeWithTableHeader):
     here the convention is positive value means fee, and negative value mean credit
     """
 
-    transaction_type: Literal[TransactionType.BUY, TransactionType.SELL]
+    size: Decimal
+    calculation_status: CalculationStatus = field(init=False)
     transaction_value: Money
     fee_and_tax: list[Money] = field(default_factory=list)
+    transaction_type: str = "Trade"
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.match_status = CalculationStatus(self.size)
+        self.calculation_status = CalculationStatus(self.size)
 
     def clear_calculation(self):
         """discard old calculation and start anew"""
-        self.match_status = CalculationStatus(self.size)
+        self.calculation_status = CalculationStatus(self.size)
+
+    def get_unmatched_share(self):
+        """return the number of shares that are not yet accounted for in calculation"""
+        return self.calculation_status.unmatched
 
     def get_partial_value(self, qty: Decimal) -> Decimal:
         """return the gross value for partial share matching for this transaction"""
@@ -282,33 +218,41 @@ class Trade(TradeWithTableHeader):
         """return the allowable fee for partial share matching for this transaction"""
         return sum(fee.get_value() for fee in self.fee_and_tax) * qty / self.size
 
-    def get_table_repr(self) -> Tuple[str, ...]:
-        """Return Tuple representation of the transaction"""
-        return (
-            str(self.transaction_id),
-            str(self.ticker),
-            str(self.transaction_date.strftime("%d %b %Y")),
-            str(self.transaction_type.value),
-            f"{self.size:.2f}",
-            f"{self.transaction_value.get_value():.2f}",
-            f"{sum(fee.get_value() for fee in self.fee_and_tax):.2f}",
-            f"{self.match_status.total_gain:.2f}",
+    def match_with_trade(self, trade_id: int, qty: Decimal, match_type: MatchType):
+        """Note for buy trade to comment when the shares are matched for same day or
+        bed and breakfast"""
+        self.calculation_status.match(qty)
+        self.calculation_status.comment += (
+            f"{match_type} matched with trade ID {trade_id} for {qty} share(s)"
         )
+
+    def get_total_gain_exclude_loss(self):
+        """This gives "Total gain exclude loss" section in the tax form
+        I think even if part of the matching is a loss it can be offset by gain
+        for example same day matching get £-100 loss and £400 gain for section104
+        You should report £300 gain for this trade"""
+        gain = self.calculation_status.total_gain
+        return gain if gain >= 0 else 0
+
+    def get_capital_loss(self):
+        """Return a negative value as a loss if this trade incur capital loss"""
+        loss = self.calculation_status.total_gain
+        return loss if loss <= 0 else 0
 
     def __str__(self) -> str:
         fee_string = ""
         for fee in self.fee_and_tax:
             fee_string += str(fee)
         short_share = (
-            f"Short shares that are unmatched: {self.match_status.unmatched}\n"
-            if self.match_status.unmatched
+            f"Short shares that are unmatched: {self.calculation_status.unmatched}\n"
+            if self.calculation_status.unmatched
             else ""
         )
 
         return (
             f"Symbol: {self.ticker}\n"
             f"Trade Date: {self.transaction_date.strftime('%d %b %Y')}\n"
-            f"Transaction Type: {self.transaction_type.value}\n"
+            f"Transaction Type: {self.transaction_type}\n"
             f"Quantity: {self.size:2f}\n"
             f"Gross trade value:\n"
             f"{self.transaction_value}"
@@ -316,7 +260,105 @@ class Trade(TradeWithTableHeader):
             f"£{sum(fee.get_value() for fee in self.fee_and_tax):.2f}\n"
             f"{fee_string}"
             f"{short_share}"
-            f"\n{self.match_status.comment}"
+            f"\n{self.calculation_status.comment}"
+        )
+
+
+@dataclass
+class BuyTrade(Trade):
+    """Represent a buying trade"""
+
+    transaction_type: str = "Buy"
+
+    def match_with_section104(self, section_104: Section104) -> None:
+        """Add all remaining shares to section 104"""
+        remaining_shares = self.get_unmatched_share()
+        if remaining_shares == 0:
+            return
+        fee_cost = self.get_partial_fee(remaining_shares)
+        total_cost = self.get_partial_value(remaining_shares) + fee_cost
+        old_qty = section_104.quantity
+        old_cost = section_104.cost
+        section_104.add_to_section104(remaining_shares, total_cost)
+        self.calculation_status.unmatched = Decimal(0)
+        self.calculation_status.comment += (
+            f"{remaining_shares} share(s) added to Section104 pool "
+            f"with allowable cost £{total_cost:.2f} "
+            f"including dealing cost £{fee_cost:.2f}.\n"
+            f"Total number of share(s) for section 104 "
+            f"changes from {old_qty} to {section_104.quantity}.\n"
+            f"Total allowable cost change from {old_cost:.2f} to "
+            f"{section_104.cost:.2f}\n\n"
+        )
+
+
+@dataclass
+class SellTrade(Trade):
+    """Represent a selling trade"""
+
+    transaction_type: str = "Sell"
+
+    def get_disposal_proceeds(self) -> Decimal:
+        """Buy trade do not have disposal"""
+        return self.get_partial_value(self.size)
+
+    def match_with_section104(self, section_104: Section104) -> None:
+        """Matching a disposal with section104 pool"""
+        matched_qty = min(self.get_unmatched_share(), section_104.quantity)
+        if matched_qty == 0:
+            return
+        buy_cost = section_104.remove_from_section104(matched_qty)
+        self.calculation_status.match(matched_qty)
+        self.calculation_status.comment += (
+            f"{matched_qty} share(s) removed from Section104 pool "
+            f"with allowable cost £{buy_cost:.2f}.\n"
+            f"New total number of share(s) for section 104 "
+            f"is {section_104.quantity}.\n"
+            f"New total allowable cost is £{section_104.cost:.2f}\n\n"
+        )
+        self.capital_gain_calc(matched_qty, buy_cost)
+
+    def capital_gain_calc(
+        self,
+        qty: Decimal,
+        buy_cost: Decimal,
+        trade_cost_buy: Decimal = Decimal(0),
+    ) -> None:
+        """Comments to show capital gain calculation
+        transaction_id: pass None if it is a section104 match
+        """
+        proceeds = self.get_partial_value(qty)
+        trade_cost_sell = self.get_partial_fee(qty)
+        capital_gain = proceeds - buy_cost - trade_cost_buy - trade_cost_sell
+        buy_cost_comment = (
+            f"Minus allowable acquisition dealing cost: £{trade_cost_buy:.2f}\n"
+            if trade_cost_buy
+            else ""
+        )
+        sell_cost_comment = (
+            f"Minus allowable disposal dealing cost: £{trade_cost_sell:.2f}\n"
+            if trade_cost_sell
+            else ""
+        )
+        self.calculation_status.allowable_cost += (
+            buy_cost + trade_cost_buy + trade_cost_sell
+        )
+        self.calculation_status.total_gain += capital_gain
+        self.calculation_status.comment += (
+            f"Gross proceeds is £{proceeds:.2f}.\n"
+            f"Minus cost of buying: £{buy_cost:.2f}\n"
+            + buy_cost_comment
+            + sell_cost_comment
+            + f"Capital gain = £{capital_gain:.2f}\n\n"
+        )
+
+    def share_adjustment(
+        self, ratio: Fraction, to_match_sell: Decimal, to_match_buy: Decimal
+    ):
+        """Comment when a share split occurs during bed and breakfast matching"""
+        self.calculation_status.comment += (
+            f"Acquisition of size {to_match_buy} is matched to disposal of "
+            f"size {to_match_sell} due to forward/reverse split with ratio {ratio}.\n"
         )
 
 
@@ -325,31 +367,17 @@ class Section104:
     """Data class for storing section 104 pool of shares"""
 
     ticker: str
-    _quantity: Decimal
+    quantity: Decimal
     cost: Decimal
 
-    @property
-    def quantity(self):
-        """property for the number of shares in section 104"""
-        return self._quantity
-
-    @quantity.setter
-    def quantity(self, value: Decimal):
-        """setter to round off residue shares due to rounding"""
-        if value < 0.0001:
-            self._quantity = Decimal(0)
-        else:
-            self._quantity = value
-
-    def add_to_section104(self, qty: Decimal, cost: Decimal) -> str:
-        """Handle adding shares to section 104 pool and return a comment string"""
+    def add_to_section104(self, qty: Decimal, cost: Decimal) -> None:
+        """Handle adding shares to section 104 pool"""
         self.quantity += qty
         self.cost += cost
-        return comments.add_to_section104(qty, cost, self.quantity, self.cost)
 
-    def remove_from_section104(self, qty: Decimal) -> Tuple[str, Decimal]:
+    def remove_from_section104(self, qty: Decimal) -> Decimal:
         """Handle removing shares to section 104 pool
-        return a comment string and the allowable cost of the removed shares
+        return allowable cost of the removed shares
         """
         if qty > self.quantity:
             raise ValueError(
@@ -359,9 +387,4 @@ class Section104:
         allowable_cost = self.cost * qty / self.quantity
         self.cost -= allowable_cost
         self.quantity -= qty
-        return (
-            comments.remove_from_section104(
-                qty, allowable_cost, self.quantity, self.cost
-            ),
-            allowable_cost,
-        )
+        return allowable_cost

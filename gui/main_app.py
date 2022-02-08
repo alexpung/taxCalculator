@@ -18,9 +18,10 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.list import OneLineIconListItem
 
 from capital_gain.calculator import CgtCalculator
-from capital_gain.capital_summary import CgtTaxSummary
-from capital_gain.model import Dividend, Section104, Trade
+import capital_gain.capital_summary as summary
+from capital_gain.model import Dividend, Section104
 from gui.table_display import convert_table_header, get_colored_table_row
+import gui.table_presentation as table_presentation
 from statement_parser.ibkr import parse_corp_action, parse_dividend, parse_trade
 
 Config.set("input", "mouse", "mouse,multitouch_on_demand")
@@ -37,7 +38,7 @@ class CapitalGainSummaryLabel(MDLabel):
 
     def calculate_summary(self, *_args):
         """To calculate the capital gain tax summary"""
-        self.text = CgtTaxSummary.get_text_summary(
+        self.text = summary.get_text_summary(
             self.app.trades,
             self.app.date_range.start_date,
             self.app.date_range.end_date,
@@ -52,7 +53,7 @@ class TableLayout(MDBoxLayout):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        column_data = convert_table_header(Trade.table_header, 30)
+        column_data = convert_table_header(table_presentation.trade_header, 30)
         self.table = MDDataTable(
             use_pagination=True, rows_num=10, column_data=column_data
         )

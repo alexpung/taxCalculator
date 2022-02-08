@@ -3,12 +3,21 @@ from datetime import datetime
 from decimal import Decimal
 from fractions import Fraction
 import re
+from typing import Union
 import xml.etree.ElementTree as ET
 
 from iso3166 import countries
 from iso4217 import Currency
 
-from capital_gain.model import Dividend, Money, ShareReorg, Trade, TransactionType
+from capital_gain.model import (
+    BuyTrade,
+    CorporateActionType,
+    Dividend,
+    DividendType,
+    Money,
+    SellTrade,
+    ShareReorg,
+)
 
 
 def get_country_code(xml_entry: ET.Element) -> str:
@@ -38,25 +47,25 @@ def transform_dividend(xml_entry: ET.Element) -> Dividend:
         Currency(xml_entry.attrib["currency"]),
     )
     # correct negative sign for consistency
-    if xml_entry.attrib["type"] == TransactionType.WITHHOLDING.value:
+    if xml_entry.attrib["type"] == DividendType.WITHHOLDING.value:
         dividend_value.value = dividend_value.value * -1
     return Dividend(
         xml_entry.attrib["symbol"],
         datetime.strptime(xml_entry.attrib["reportDate"], "%d-%b-%y").date(),
-        TransactionType(xml_entry.attrib["type"]),
+        DividendType(xml_entry.attrib["type"]),
         dividend_value,
         get_country_code(xml_entry),
         description=str(xml_entry.attrib["description"]),
     )
 
 
-def transform_trade(xml_entry: ET.Element) -> Trade:
+def transform_trade(xml_entry: ET.Element) -> Union[BuyTrade, SellTrade]:
     """parse trade transaction to Trade objects
     # adjust the sign of the price when buying
     # note: Using abs() does not work as it is possible to buy/sell at negative price
     # thus making the wrong conversion
     """
-    if xml_entry.attrib["buySell"] == TransactionType.BUY.value:
+    if xml_entry.attrib["buySell"] == "BUY":
         # correct negative sign for consistency
         proceeds = Decimal(xml_entry.attrib["proceeds"]) * -1
     else:
@@ -92,23 +101,33 @@ def transform_trade(xml_entry: ET.Element) -> Trade:
                 "Tax",
             )
         )
-    return Trade(
-        xml_entry.attrib["symbol"],
-        datetime.strptime(xml_entry.attrib["tradeDate"], "%d-%b-%y").date(),
-        TransactionType(xml_entry.attrib["buySell"]),
-        # In xml report sell trade have negative quantity, use abs to correct this
-        abs(Decimal(xml_entry.attrib["quantity"])),
-        value,
-        fee_and_tax,
-    )
+    if xml_entry.attrib["buySell"] == "BUY":
+        return BuyTrade(
+            xml_entry.attrib["symbol"],
+            datetime.strptime(xml_entry.attrib["tradeDate"], "%d-%b-%y").date(),
+            Decimal(xml_entry.attrib["quantity"]),
+            value,
+            fee_and_tax,
+        )
+    elif xml_entry.attrib["buySell"] == "SELL":
+        return SellTrade(
+            xml_entry.attrib["symbol"],
+            datetime.strptime(xml_entry.attrib["tradeDate"], "%d-%b-%y").date(),
+            # In xml report sell trade have negative quantity, use abs to correct this
+            abs(Decimal(xml_entry.attrib["quantity"])),
+            value,
+            fee_and_tax,
+        )
+    else:
+        raise ValueError(f"Unexpected Trade Type {xml_entry.attrib['buySell']}")
 
 
 def parse_dividend(file: str) -> list[Dividend]:
     """Parse xml to extract Dividend objects"""
     dividend_type = [
-        TransactionType.DIVIDEND,
-        TransactionType.DIVIDEND_IN_LIEU,
-        TransactionType.WITHHOLDING,
+        DividendType.DIVIDEND,
+        DividendType.DIVIDEND_IN_LIEU,
+        DividendType.WITHHOLDING,
     ]
     tree = ET.parse(file)
     test = tree.findall(".//CashTransaction")
@@ -118,7 +137,7 @@ def parse_dividend(file: str) -> list[Dividend]:
     return [transform_dividend(dividend) for dividend in dividend_list]
 
 
-def parse_trade(file: str) -> list[Trade]:
+def parse_trade(file: str) -> list[Union[BuyTrade, SellTrade]]:
     """Parse xml to extract Trade objects"""
     tree = ET.parse(file)
     test = tree.findall(".//Trades/Order")
@@ -130,11 +149,11 @@ def transform_corp_action(xml_entry: ET.Element) -> ShareReorg:
     """Parse corporation entries to ShareReorg objects, currently only split and
     reverse split is supported"""
     if xml_entry.attrib["type"] == "FS":
-        action_type = TransactionType.SHARE_SPLIT
+        action_type = CorporateActionType.SHARE_SPLIT
     elif xml_entry.attrib["type"] == "RS":
-        action_type = TransactionType.SHARE_MERGE
+        action_type = CorporateActionType.SHARE_MERGE
     else:
-        action_type = TransactionType.CORP_ACTION_OTHER
+        action_type = CorporateActionType.CORP_ACTION_OTHER
     # extract ratio from the description
     ratio_matcher = re.compile(r"(\d*) FOR (\d*)")
     result = re.search(ratio_matcher, xml_entry.attrib["actionDescription"])
@@ -154,7 +173,7 @@ def transform_corp_action(xml_entry: ET.Element) -> ShareReorg:
     )
 
 
-def parse_corp_action(file: str):
+def parse_corp_action(file: str) -> list[ShareReorg]:
     """Parse xml to extract Corporation objects"""
     supported_type = ["FS", "RS"]
     tree = ET.parse(file)

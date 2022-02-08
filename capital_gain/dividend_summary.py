@@ -4,7 +4,7 @@ import datetime
 from decimal import Decimal
 from typing import List
 
-from capital_gain.model import Dividend, TransactionType
+from capital_gain.model import Dividend, DividendType
 
 
 class DividendSummary:
@@ -36,13 +36,13 @@ class DividendSummary:
 
     def show_dividend_total(self) -> str:
         """show total dividends"""
-        dividend = self.get_dividend_total(self.dividend_list, TransactionType.DIVIDEND)
+        dividend = self.get_dividend_total(self.dividend_list, DividendType.DIVIDEND)
         dividend_in_lieu = self.get_dividend_total(
-            self.dividend_list, TransactionType.DIVIDEND_IN_LIEU
+            self.dividend_list, DividendType.DIVIDEND_IN_LIEU
         )
         total_dividend = dividend + dividend_in_lieu
         withholding_tax = self.get_dividend_total(
-            self.dividend_list, TransactionType.WITHHOLDING
+            self.dividend_list, DividendType.WITHHOLDING
         )
         net_income = total_dividend - withholding_tax
         output_string = (
@@ -57,7 +57,7 @@ class DividendSummary:
 
     @staticmethod
     def get_dividend_total(
-        dividend_list: List[Dividend], transaction_type: TransactionType
+        dividend_list: List[Dividend], transaction_type: DividendType
     ) -> Decimal:
         """get the sum of value in Sterling regardless of transaction type"""
         return sum(
@@ -75,13 +75,13 @@ class DividendSummary:
             f"Dividends by country from {self.tax_year_start} to {self.tax_year_end}:\n"
         )
         for country, dividend_list in self.get_dividend_by_country().items():
-            dividend = self.get_dividend_total(dividend_list, TransactionType.DIVIDEND)
+            dividend = self.get_dividend_total(dividend_list, DividendType.DIVIDEND)
             dividend_in_lieu = self.get_dividend_total(
-                dividend_list, TransactionType.DIVIDEND_IN_LIEU
+                dividend_list, DividendType.DIVIDEND_IN_LIEU
             )
             total_dividend = dividend + dividend_in_lieu
             withholding_tax = self.get_dividend_total(
-                dividend_list, TransactionType.WITHHOLDING
+                dividend_list, DividendType.WITHHOLDING
             )
             net_income = total_dividend - withholding_tax
             output_string += (

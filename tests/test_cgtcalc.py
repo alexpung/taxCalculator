@@ -2,53 +2,35 @@
 import datetime
 from decimal import Decimal
 from fractions import Fraction
-from typing import List, Tuple, Union
+from typing import List, Union
 import unittest
 
 from capital_gain.calculator import CgtCalculator
 from capital_gain.exception import MixedTickerError
-from capital_gain.model import MatchType, Money, ShareReorg, Trade, TransactionType
+from capital_gain.model import (
+    BuyTrade,
+    CorporateActionType,
+    Money,
+    SellTrade,
+    ShareReorg,
+)
 
 
 class TestCalculator(unittest.TestCase):
     """To test that capital gain is calculated correctly"""
 
-    @staticmethod
-    def _sum_match_type(
-        transaction: Union[Trade, ShareReorg]
-    ) -> Tuple[Decimal, Decimal, Decimal]:
-        bed_and_breakfast = sum(
-            [
-                match.size
-                for match in transaction.match_status.record
-                if match.type == MatchType.BED_AND_BREAKFAST
-            ],
-            Decimal(0),
-        )
-        same_day = sum(
-            [
-                match.size
-                for match in transaction.match_status.record
-                if match.type == MatchType.SAME_DAY
-            ],
-            Decimal(0),
-        )
-        return transaction.match_status.unmatched, same_day, bed_and_breakfast
-
     def test_unmatched_sell(self) -> None:
         """Test short sell"""
-        trades: List[Union[Trade, ShareReorg]] = [
-            Trade(
+        trades: List[Union[BuyTrade, SellTrade, ShareReorg]] = [
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 5),
-                TransactionType.BUY,
                 Decimal(100),
                 Money(Decimal(10000)),
             ),
-            Trade(
+            SellTrade(
                 "AMD",
                 datetime.date(2021, 10, 6),
-                TransactionType.SELL,
                 Decimal(150),
                 Money(Decimal(10000)),
             ),
@@ -57,7 +39,7 @@ class TestCalculator(unittest.TestCase):
         test.calculate_tax()
         self.assertEqual(
             50,
-            test.transaction_list[1].match_status.unmatched,
+            test.trade_list[1].get_unmatched_share(),
         )
 
     def test_mixed_ticker(self) -> None:
@@ -65,25 +47,22 @@ class TestCalculator(unittest.TestCase):
 
         Expected result: Raise MixedTickerError since different Ticker is mixed in.
         """
-        trades: List[Union[Trade, ShareReorg]] = [
-            Trade(
+        trades: List[Union[BuyTrade, ShareReorg]] = [
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 5),
-                TransactionType.BUY,
                 Decimal(100),
                 Money(Decimal(10000)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 6),
-                TransactionType.BUY,
                 Decimal(100),
                 Money(Decimal(10000)),
             ),
-            Trade(
+            BuyTrade(
                 "JMD",
                 datetime.date(2021, 10, 6),
-                TransactionType.BUY,
                 Decimal(100),
                 Money(Decimal(10000)),
             ),
@@ -95,25 +74,22 @@ class TestCalculator(unittest.TestCase):
 
         Expected result: No MixedTickerError is raised
         """
-        trades: List[Union[Trade, ShareReorg]] = [
-            Trade(
+        trades: List[Union[BuyTrade, SellTrade, ShareReorg]] = [
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 5),
-                TransactionType.BUY,
                 Decimal(100),
                 Money(Decimal(10000)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 6),
-                TransactionType.BUY,
                 Decimal(110),
                 Money(Decimal(10000)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 6),
-                TransactionType.BUY,
                 Decimal(100),
                 Money(Decimal(12000)),
             ),
@@ -129,77 +105,47 @@ class TestCalculator(unittest.TestCase):
         Expected result: 3rd, 4th and 5th transaction will match and leaving 30 shares
         that were sold unmatched
         """
-        trades: List[Union[Trade, ShareReorg]] = [
-            Trade(
+        trades: List[Union[BuyTrade, SellTrade, ShareReorg]] = [
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 5),
-                TransactionType.BUY,
                 Decimal(100),
                 Money(Decimal(10000)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 6),
-                TransactionType.BUY,
                 Decimal(110),
                 Money(Decimal(12100)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 7),
-                TransactionType.BUY,
                 Decimal(100),
                 Money(Decimal(12000)),
             ),
-            Trade(
+            SellTrade(
                 "AMD",
                 datetime.date(2021, 10, 7),
-                TransactionType.SELL,
                 Decimal(150),
                 Money(Decimal(19500)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 7),
-                TransactionType.BUY,
                 Decimal(20),
                 Money(Decimal(2800)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 8),
-                TransactionType.BUY,
                 Decimal(100),
                 Money(Decimal(15000)),
             ),
         ]
         test = CgtCalculator(trades)
         test.match_same_day_disposal()
-        self.assertEqual(
-            self._sum_match_type(trades[0]),
-            (Decimal(100), Decimal(0), Decimal(0)),
-        )
-        self.assertEqual(
-            self._sum_match_type(trades[1]),
-            (Decimal(110), Decimal(0), Decimal(0)),
-        )
-        self.assertEqual(
-            self._sum_match_type(trades[2]),
-            (Decimal(0), Decimal(100), Decimal(0)),
-        )
-        self.assertEqual(
-            self._sum_match_type(trades[3]),
-            (Decimal(30), Decimal(120), Decimal(0)),
-        )
-        self.assertEqual(
-            self._sum_match_type(trades[4]),
-            (Decimal(0), Decimal(20), Decimal(0)),
-        )
-        self.assertEqual(
-            self._sum_match_type(trades[5]),
-            (Decimal(100), Decimal(0), Decimal(0)),
-        )
-        self.assertEqual(test.transaction_list[3].match_status.total_gain, 800)
+        self.assertEqual(test.trade_list[3].get_total_gain_exclude_loss(), 800)
 
     def test_bed_and_breakfast_matching(self) -> None:
         """To test bread and breakfast matching works and
@@ -209,178 +155,60 @@ class TestCalculator(unittest.TestCase):
         6th and 7th (partial match) transaction will match with 5th transaction
         4th and 8th transaction will not match as they are outside 30 days limit
         """
-        trades: List[Union[Trade, ShareReorg]] = [
-            Trade(
+        trades: List[Union[BuyTrade, SellTrade, ShareReorg]] = [
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 5),
-                TransactionType.BUY,
                 Decimal(100),
                 Money(Decimal(10000)),
             ),
-            Trade(
+            SellTrade(
                 "AMD",
                 datetime.date(2021, 10, 6),
-                TransactionType.SELL,
                 Decimal(50),
                 Money(Decimal(5000)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 11, 5),
-                TransactionType.BUY,
                 Decimal(40),
                 Money(Decimal(3200)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 11, 6),
-                TransactionType.BUY,
                 Decimal(30),
                 Money(Decimal(3300)),
             ),
-            Trade(
+            SellTrade(
                 "AMD",
                 datetime.date(2021, 11, 7),
-                TransactionType.SELL,
                 Decimal(15),
                 Money(Decimal(2400)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 12, 6),
-                TransactionType.BUY,
                 Decimal(10),
                 Money(Decimal(1300)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 12, 7),
-                TransactionType.BUY,
                 Decimal(10),
                 Money(Decimal(1400)),
             ),
-            Trade(
+            BuyTrade(
                 "AMD",
                 datetime.date(2021, 12, 8),
-                TransactionType.BUY,
                 Decimal(10),
                 Money(Decimal(1500)),
             ),
         ]
         test = CgtCalculator(trades)
         test.match_bed_and_breakfast_disposal()
-        self.assertEqual(
-            self._sum_match_type(test.transaction_list[0]),
-            (Decimal(100), Decimal(0), Decimal(0)),
-        )
-        self.assertEqual(
-            self._sum_match_type(test.transaction_list[1]),
-            (Decimal(10), Decimal(0), Decimal(40)),
-        )
-        self.assertEqual(
-            self._sum_match_type(test.transaction_list[2]),
-            (Decimal(0), Decimal(0), Decimal(40)),
-        )
-        self.assertEqual(
-            self._sum_match_type(test.transaction_list[3]),
-            (Decimal(30), Decimal(0), Decimal(0)),
-        )
-        self.assertEqual(
-            self._sum_match_type(test.transaction_list[4]),
-            (Decimal(0), Decimal(0), Decimal(15)),
-        )
-        self.assertEqual(
-            self._sum_match_type(test.transaction_list[5]),
-            (Decimal(0), Decimal(0), Decimal(10)),
-        )
-        self.assertEqual(
-            self._sum_match_type(test.transaction_list[6]),
-            (Decimal(5), Decimal(0), Decimal(5)),
-        )
-        self.assertEqual(
-            self._sum_match_type(test.transaction_list[7]),
-            (Decimal(10), Decimal(0), Decimal(0)),
-        )
-        self.assertEqual(test.transaction_list[1].match_status.total_gain, 800)
-        self.assertEqual(test.transaction_list[4].match_status.total_gain, 400)
-
-    def test_sorted(self) -> None:
-        """To test the sort function sort transaction list by date
-
-        Expected result: Transactions are sorted in chronological order
-        Corporate split/merge happen earlier than trade in the same day
-        """
-        trades: List[Union[Trade, ShareReorg]] = [
-            Trade(
-                "AMD",
-                datetime.date(2021, 1, 5),
-                TransactionType.BUY,
-                Decimal(100),
-                Money(Decimal(10000)),
-            ),
-            Trade(
-                "AMD",
-                datetime.date(2022, 12, 6),
-                TransactionType.SELL,
-                Decimal(50),
-                Money(Decimal(10000)),
-            ),
-            ShareReorg(
-                "AMD",
-                datetime.date(2022, 12, 6),
-                TransactionType.SHARE_SPLIT,
-                Decimal(600),
-                Fraction(2),
-            ),
-            Trade(
-                "AMD",
-                datetime.date(2021, 12, 8),
-                TransactionType.BUY,
-                Decimal(20),
-                Money(Decimal(12000)),
-            ),
-            Trade(
-                "AMD",
-                datetime.date(2021, 11, 6),
-                TransactionType.BUY,
-                Decimal(30),
-                Money(Decimal(10000)),
-            ),
-            Trade(
-                "AMD",
-                datetime.date(2021, 12, 7),
-                TransactionType.SELL,
-                Decimal(10),
-                Money(Decimal(10000)),
-            ),
-            Trade(
-                "AMD",
-                datetime.date(2020, 12, 7),
-                TransactionType.BUY,
-                Decimal(10),
-                Money(Decimal(12000)),
-            ),
-        ]
-        test = CgtCalculator(trades)
-        self.assertEqual(
-            datetime.date(2020, 12, 7), test.transaction_list[0].transaction_date
-        )
-        self.assertEqual(
-            datetime.date(2021, 1, 5), test.transaction_list[1].transaction_date
-        )
-        self.assertEqual(
-            datetime.date(2021, 11, 6), test.transaction_list[2].transaction_date
-        )
-        self.assertEqual(
-            datetime.date(2021, 12, 7), test.transaction_list[3].transaction_date
-        )
-        self.assertEqual(
-            datetime.date(2021, 12, 8), test.transaction_list[4].transaction_date
-        )
-        self.assertIsInstance(test.transaction_list[5], ShareReorg)
-        self.assertEqual(
-            datetime.date(2022, 12, 6), test.transaction_list[6].transaction_date
-        )
+        self.assertEqual(test.trade_list[1].get_total_gain_exclude_loss(), 800)
+        self.assertEqual(test.trade_list[4].get_total_gain_exclude_loss(), 400)
 
     def test_hmrc_example3(self) -> None:
         """
@@ -397,35 +225,31 @@ class TestCalculator(unittest.TestCase):
         (£2,080 disposal proceeds), incurring dealing costs of
         £105 including VAT."""
 
-        trades: List[Union[Trade, ShareReorg]] = [
-            Trade(
+        trades: List[Union[BuyTrade, SellTrade, ShareReorg]] = [
+            BuyTrade(
                 "Lobster plc",
                 datetime.date(2014, 4, 1),
-                TransactionType.BUY,
                 Decimal(1000),
                 Money(Decimal(4000)),
                 [Money(Decimal(150), note="Broker Commission")],
             ),
-            Trade(
+            BuyTrade(
                 "Lobster plc",
                 datetime.date(2017, 9, 1),
-                TransactionType.BUY,
                 Decimal(500),
                 Money(Decimal(2050)),
                 [Money(Decimal(80), note="Broker Commission")],
             ),
-            Trade(
+            SellTrade(
                 "Lobster plc",
                 datetime.date(2020, 5, 1),
-                TransactionType.SELL,
                 Decimal(700),
                 Money(Decimal(3360)),
                 [Money(Decimal(100), note="Broker Commission")],
             ),
-            Trade(
+            SellTrade(
                 "Lobster plc",
                 datetime.date(2021, 2, 1),
-                TransactionType.SELL,
                 Decimal(400),
                 Money(Decimal(2080)),
                 [Money(Decimal(105), note="Broker Commission")],
@@ -435,8 +259,8 @@ class TestCalculator(unittest.TestCase):
         test.calculate_tax()
         self.assertEqual(int(test.section104.cost), int(Decimal(1674.66666666667)))
         self.assertEqual(test.section104.quantity, Decimal(400))
-        self.assertEqual(int(test.transaction_list[2].match_status.total_gain), 329)
-        self.assertEqual(int(test.transaction_list[3].match_status.total_gain), 300)
+        self.assertEqual(int(test.trade_list[2].get_total_gain_exclude_loss()), 329)
+        self.assertEqual(int(test.trade_list[3].get_total_gain_exclude_loss()), 300)
 
     def test_share_split_bed_and_breakfast(self):
         """Testing an extreme case where 2 stock split occurs
@@ -451,45 +275,41 @@ class TestCalculator(unittest.TestCase):
         the remaining cost is 8000 - 8000 * 216.666/2000 = £7133.33...
         """
         trades = [
-            Trade(
+            BuyTrade(
                 "Lobster plc",  # £4 per share
                 datetime.date(2020, 5, 1),
-                TransactionType.BUY,
                 Decimal(2000),
                 Money(Decimal(8000)),
             ),
-            Trade(
+            SellTrade(
                 "Lobster plc",  # £4 per share
                 datetime.date(2020, 5, 2),
-                TransactionType.SELL,
                 Decimal(1150),
                 Money(Decimal(4600)),
             ),
-            Trade(
+            BuyTrade(
                 "Lobster plc",  # Share already split here, pre-split £3 per share
                 datetime.date(2020, 5, 3),
-                TransactionType.BUY,
                 Decimal(100),
                 Money(Decimal(100)),
             ),
             ShareReorg(
                 "Lobster plc",
                 datetime.date(2020, 5, 3),
-                TransactionType.SHARE_SPLIT,
+                CorporateActionType.SHARE_SPLIT,
                 Decimal(0),
                 Fraction(3),
             ),
             ShareReorg(
                 "Lobster plc",
                 datetime.date(2020, 5, 4),
-                TransactionType.SHARE_SPLIT,
+                CorporateActionType.SHARE_SPLIT,
                 Decimal(0),
                 Fraction(2),
             ),
-            Trade(
+            BuyTrade(
                 "Lobster plc",  # £2 per share pre-split
                 datetime.date(2020, 5, 5),
-                TransactionType.BUY,
                 Decimal(5400),
                 Money(Decimal(1800)),
             ),
@@ -497,7 +317,7 @@ class TestCalculator(unittest.TestCase):
         test = CgtCalculator(trades)
         section104 = test.calculate_tax()
         self.assertAlmostEqual(
-            Decimal("1833.3333333"), trades[1].match_status.total_gain
+            Decimal("1833.3333333"), trades[1].calculation_status.total_gain
         )
         self.assertEqual(10700, section104.quantity)
         self.assertAlmostEqual(Decimal("7133.3333333"), section104.cost)
@@ -505,37 +325,35 @@ class TestCalculator(unittest.TestCase):
     def test_share_split_section104(self):
         """Testing section104 handling when stock split occurs"""
         trades = [
-            Trade(
+            BuyTrade(
                 "Lobster plc",
                 datetime.date(2020, 5, 1),
-                TransactionType.BUY,
                 Decimal(2000),
                 Money(Decimal(12000)),
             ),
             ShareReorg(
                 "Lobster plc",
                 datetime.date(2020, 5, 3),
-                TransactionType.SHARE_SPLIT,
+                CorporateActionType.SHARE_SPLIT,
                 Decimal(0),
                 Fraction(1, 2),
             ),
             ShareReorg(
                 "Lobster plc",
                 datetime.date(2020, 5, 4),
-                TransactionType.SHARE_SPLIT,
+                CorporateActionType.SHARE_SPLIT,
                 Decimal(0),
                 Fraction(6),
             ),
-            Trade(
+            SellTrade(
                 "Lobster plc",
                 datetime.date(2020, 6, 2),
-                TransactionType.SELL,
                 Decimal(5400),
                 Money(Decimal(21600)),
             ),
         ]
         test = CgtCalculator(trades)
         section104 = test.calculate_tax()
-        self.assertEqual(10800, trades[3].match_status.total_gain)
+        self.assertEqual(10800, trades[3].calculation_status.total_gain)
         self.assertEqual(600, section104.quantity)
         self.assertEqual(1200, section104.cost)
