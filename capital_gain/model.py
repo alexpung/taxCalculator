@@ -287,8 +287,8 @@ class BuyTrade(Trade):
             f"including dealing cost £{fee_cost:.2f}.\n"
             f"Total number of share(s) for section 104 "
             f"changes from {old_qty} to {section_104.quantity}.\n"
-            f"Total allowable cost change from {old_cost:.2f} to "
-            f"{section_104.cost:.2f}\n\n"
+            f"Total allowable cost change from £{old_cost:.2f} to "
+            f"£{section_104.cost:.2f}\n\n"
         )
 
 

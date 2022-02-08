@@ -16,13 +16,13 @@ def show_section104_and_short(trades: List[Trade], section104_list: List[Section
             f"total cost: {section104.cost:.2f}\n"
         )
     output_text += "\n"
-    short_list = [trade for trade in trades if trade.match_status.unmatched]
+    short_list = [trade for trade in trades if trade.get_unmatched_share()]
     if short_list:
         grouped_short_list: DefaultDict[str, Decimal] = defaultdict(Decimal)
         for short_holding in short_list:
             grouped_short_list[
                 short_holding.ticker
-            ] += short_holding.match_status.unmatched
+            ] += short_holding.get_unmatched_share()
         output_text += "Short holding:\n"
         for ticker, quantity in grouped_short_list.items():
             output_text += f"Symbol: {ticker}\tquantity: {quantity}\n"

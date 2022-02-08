@@ -10,7 +10,7 @@ from kivymd.toast import toast
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.menu import MDDropdownMenu
 
-from capital_gain.capital_summary import CgtTaxSummary
+import capital_gain.capital_summary as summary
 from capital_gain.dividend_summary import DividendSummary
 from capital_gain.section104 import show_section104_and_short
 
@@ -70,7 +70,7 @@ class ImportExportWidget(MDBoxLayout):
                 file.write(dividend_summary.show_dividend_by_country())
                 file.write(dividend_summary.show_dividend_total())
                 file.write(
-                    CgtTaxSummary.get_text_summary(
+                    summary.get_text_summary(
                         self.app.trades,
                         self.app.date_range.start_date,
                         self.app.date_range.end_date,
