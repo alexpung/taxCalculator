@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from fractions import Fraction
-from typing import Optional, Sequence, Union
+from typing import DefaultDict, Optional, Sequence, Union
 
 from .model import BuyTrade, MatchType, Section104, SellTrade, ShareReorg, Trade
 
@@ -19,21 +19,27 @@ class CgtCalculator:
         transaction_list: Sequence[Union[BuyTrade, SellTrade]],
         corp_action_list: Optional[Sequence[ShareReorg]] = None,
     ) -> None:
-        self.ticker_transaction_list = defaultdict(list)
+        self.ticker_transaction_list: DefaultDict[
+            str, list[Union[BuyTrade, SellTrade]]
+        ] = defaultdict(list)
+        self.ticker_corp_action_list: DefaultDict[str, list[ShareReorg]] = defaultdict(
+            list
+        )
         for trade in transaction_list:
-            # old calculation may be included and need to be cleared first
             trade.clear_calculation()
             self.ticker_transaction_list[trade.ticker].append(trade)
-        self.corp_action_list = list(corp_action_list) if corp_action_list else []
+        if corp_action_list:
+            for corp_action in corp_action_list:
+                corp_action.clear_calculation()
+                self.ticker_corp_action_list[corp_action.ticker].append(corp_action)
         self.section104 = Section104()
 
     def calculate_tax(self) -> Section104:
         """To calculate chargeable gain and
         allowable loss of a list of same kind of shares"""
-        for _, trade in self.ticker_transaction_list.items():
-            self.match_same_day_disposal(trade)
-            self.match_bed_and_breakfast_disposal(trade)
-            self.match_section104(trade)
+        self.match_same_day_disposal()
+        self.match_bed_and_breakfast_disposal()
+        self.match_section104()
         return self.section104
 
     @staticmethod
@@ -91,19 +97,18 @@ class CgtCalculator:
         )
         sell_transaction.capital_gain_calc(to_match_sell, buy_cost, trade_cost_buy)
 
-    def match_same_day_disposal(
-        self, trade_list: list[Union[BuyTrade, SellTrade]]
-    ) -> None:
+    def match_same_day_disposal(self) -> None:
         """To match buy and sell transactions that occur in the same day"""
-        for sell_transaction in [x for x in trade_list if isinstance(x, SellTrade)]:
-            matched_transactions_list = [
-                x
-                for x in trade_list
-                if x.transaction_date == sell_transaction.transaction_date
-                and isinstance(x, BuyTrade)
-            ]
-            for buy_transaction in matched_transactions_list:
-                self._match(buy_transaction, sell_transaction, MatchType.SAME_DAY)
+        for _, trade_list in self.ticker_transaction_list.items():
+            for sell_transaction in [x for x in trade_list if isinstance(x, SellTrade)]:
+                matched_transactions_list = [
+                    x
+                    for x in trade_list
+                    if x.transaction_date == sell_transaction.transaction_date
+                    and isinstance(x, BuyTrade)
+                ]
+                for buy_transaction in matched_transactions_list:
+                    self._match(buy_transaction, sell_transaction, MatchType.SAME_DAY)
 
     def check_share_split(self, trade1: Trade, trade2: Trade) -> Fraction:
         """For bed and breakfast matching, share split needs to be checked
@@ -111,11 +116,8 @@ class CgtCalculator:
         """
         assert trade1.ticker == trade2.ticker
         corp_split_list = []
-        filtered_corp_action_list = [
-            x for x in self.corp_action_list if x.ticker == trade1.ticker
-        ]
         ratio = Fraction(1)
-        for corp_action in filtered_corp_action_list:
+        for corp_action in self.ticker_corp_action_list[trade1.ticker]:
             # note the equal sign: A corp action happens before a trade on the same day
             if (
                 trade2.transaction_date
@@ -131,35 +133,37 @@ class CgtCalculator:
             ratio = ratio * split_action.ratio
         return ratio
 
-    def match_bed_and_breakfast_disposal(self, trade_list) -> None:
+    def match_bed_and_breakfast_disposal(self) -> None:
         """To match buy transactions that occur within 30 days of a sell transaction"""
-        for sell_transaction in [x for x in trade_list if isinstance(x, SellTrade)]:
-            matched_transactions_list = [
-                x
-                for x in trade_list
-                if 30
-                >= (x.transaction_date - sell_transaction.transaction_date).days
-                > 0
-                and isinstance(x, BuyTrade)
-            ]
-            for buy_transaction in matched_transactions_list:
-                ratio = self.check_share_split(buy_transaction, sell_transaction)
-                self._match(
-                    buy_transaction,
-                    sell_transaction,
-                    MatchType.BED_AND_BREAKFAST,
-                    ratio,
-                )
+        for _, trade_list in self.ticker_transaction_list.items():
+            for sell_transaction in [x for x in trade_list if isinstance(x, SellTrade)]:
+                matched_transactions_list = [
+                    x
+                    for x in trade_list
+                    if 30
+                    >= (x.transaction_date - sell_transaction.transaction_date).days
+                    > 0
+                    and isinstance(x, BuyTrade)
+                ]
+                for buy_transaction in matched_transactions_list:
+                    ratio = self.check_share_split(buy_transaction, sell_transaction)
+                    self._match(
+                        buy_transaction,
+                        sell_transaction,
+                        MatchType.BED_AND_BREAKFAST,
+                        ratio,
+                    )
 
-    def match_section104(self, trade_list) -> None:
+    def match_section104(self) -> None:
         """To handle section 104 share matching"""
-        merged_list: list[Union[Trade, ShareReorg]] = [
-            *trade_list,
-            *self.corp_action_list,
-        ]
-        merged_list.sort()
-        for transaction in merged_list:
-            transaction.match_with_section104(self.section104)
+        for ticker, trade_list in self.ticker_transaction_list.items():
+            merged_list: list[Union[Trade, ShareReorg]] = [
+                *trade_list,
+                *self.ticker_corp_action_list[ticker],
+            ]
+            merged_list.sort()
+            for transaction in merged_list:
+                transaction.match_with_section104(self.section104)
 
     def get_section104(self):
         """get the pool of section 104 shares"""

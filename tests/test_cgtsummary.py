@@ -6,7 +6,7 @@ import unittest
 
 from capital_gain.calculator import CgtCalculator
 import capital_gain.capital_summary as summary
-from capital_gain.model import BuyTrade, Money, SellTrade, ShareReorg
+from capital_gain.model import BuyTrade, Money, SellTrade
 
 
 class TestCgtSummary(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestCgtSummary(unittest.TestCase):
         """test the calculation of capital gain summary"""
         tax_start_date = datetime.date(2021, 4, 6)
         tax_end_date = datetime.date(2022, 4, 5)
-        trades: Sequence[Union[BuyTrade, SellTrade, ShareReorg]] = [
+        trades: Sequence[Union[BuyTrade, SellTrade]] = [
             BuyTrade(
                 "MMM",
                 datetime.date(2021, 10, 5),

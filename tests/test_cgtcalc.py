@@ -44,8 +44,9 @@ class TestCalculator(unittest.TestCase):
     def test_same_day_matching(self) -> None:
         """To test that same day matching function works
 
-        Expected result: 3rd, 4th and 5th transaction will match and leaving 30 shares
-        that were sold unmatched
+        Expected result: The sell trade will match with the third buy trade instead of
+        the first trade. Netting 5000 capital gain and the cost of section 104 remains
+        10000
         """
         trades: Sequence[Union[BuyTrade, SellTrade]] = [
             BuyTrade(
@@ -54,40 +55,24 @@ class TestCalculator(unittest.TestCase):
                 Decimal(100),
                 Money(Decimal(10000)),
             ),
-            BuyTrade(
-                "AMD",
-                datetime.date(2021, 10, 6),
-                Decimal(110),
-                Money(Decimal(12100)),
-            ),
-            BuyTrade(
-                "AMD",
-                datetime.date(2021, 10, 7),
-                Decimal(100),
-                Money(Decimal(12000)),
-            ),
             SellTrade(
                 "AMD",
                 datetime.date(2021, 10, 7),
-                Decimal(150),
-                Money(Decimal(19500)),
+                Decimal(100),
+                Money(Decimal(25000)),
             ),
             BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 7),
-                Decimal(20),
-                Money(Decimal(2800)),
-            ),
-            BuyTrade(
-                "AMD",
-                datetime.date(2021, 10, 8),
                 Decimal(100),
-                Money(Decimal(15000)),
+                Money(Decimal(20000)),
             ),
         ]
         test = CgtCalculator(trades)
-        test.match_same_day_disposal(test.ticker_transaction_list["AMD"])
-        self.assertEqual(trades[3].get_total_gain_exclude_loss(), 800)
+        test.calculate_tax()
+        section104_pool = test.get_section104()
+        self.assertEqual(trades[1].get_total_gain_exclude_loss(), 5000)
+        self.assertEqual(section104_pool.get_cost("AMD"), 10000)
 
     def test_bed_and_breakfast_matching(self) -> None:
         """To test bread and breakfast matching works and
@@ -148,7 +133,7 @@ class TestCalculator(unittest.TestCase):
             ),
         ]
         test = CgtCalculator(trades)
-        test.match_bed_and_breakfast_disposal(test.ticker_transaction_list["AMD"])
+        test.match_bed_and_breakfast_disposal()
         self.assertEqual(trades[1].get_total_gain_exclude_loss(), 800)
         self.assertEqual(trades[4].get_total_gain_exclude_loss(), 400)
 

@@ -77,7 +77,7 @@ class ImportExportWidget(MDBoxLayout):
                     )
                 )
                 file.write(
-                    show_section104_and_short(self.app.trades, self.app.section104)
+                    show_section104_and_short(self.app.trades, self.app.section_104)
                 )
                 for trade in self.app.trades:
                     file.write(str(trade))

@@ -113,8 +113,6 @@ class CalculatorApp(MDApp):
         calculator = CgtCalculator(self.trades, self.corp_actions)
         calculator.calculate_tax()
         self.section_104 = calculator.get_section104()
-        # sort the results and put it in the table
-        self.trades = sorted(self.trades, key=lambda x: (x.ticker, x.transaction_date))
         self.update_table()
 
     def on_row_press(self, _, instance_row) -> None:
@@ -128,8 +126,10 @@ class CalculatorApp(MDApp):
 
     def update_table(self) -> None:
         """called when the data table needs to be updated"""
+        table_data = [*self.trades, *self.corp_actions]
+        table_data = sorted(table_data, key=lambda x: (x.ticker, x.transaction_date))
         self.trade_table_data = get_colored_table_row(
-            list(self.trades), self.date_range.start_date, self.date_range.end_date
+            table_data, self.date_range.start_date, self.date_range.end_date
         )
 
     def on_date_range(self, *_args):
