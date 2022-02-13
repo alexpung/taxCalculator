@@ -2,7 +2,7 @@
 import datetime
 from decimal import Decimal
 from fractions import Fraction
-from typing import List, Union
+from typing import Sequence, Union
 import unittest
 
 from capital_gain.calculator import CgtCalculator
@@ -21,7 +21,7 @@ class TestCalculator(unittest.TestCase):
 
     def test_unmatched_sell(self) -> None:
         """Test short sell"""
-        trades: List[Union[BuyTrade, SellTrade, ShareReorg]] = [
+        trades: Sequence[Union[BuyTrade, SellTrade]] = [
             BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 5),
@@ -47,7 +47,7 @@ class TestCalculator(unittest.TestCase):
 
         Expected result: Raise MixedTickerError since different Ticker is mixed in.
         """
-        trades: List[Union[BuyTrade, ShareReorg]] = [
+        trades = [
             BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 5),
@@ -74,7 +74,7 @@ class TestCalculator(unittest.TestCase):
 
         Expected result: No MixedTickerError is raised
         """
-        trades: List[Union[BuyTrade, SellTrade, ShareReorg]] = [
+        trades = [
             BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 5),
@@ -105,7 +105,7 @@ class TestCalculator(unittest.TestCase):
         Expected result: 3rd, 4th and 5th transaction will match and leaving 30 shares
         that were sold unmatched
         """
-        trades: List[Union[BuyTrade, SellTrade, ShareReorg]] = [
+        trades: Sequence[Union[BuyTrade, SellTrade]] = [
             BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 5),
@@ -155,7 +155,7 @@ class TestCalculator(unittest.TestCase):
         6th and 7th (partial match) transaction will match with 5th transaction
         4th and 8th transaction will not match as they are outside 30 days limit
         """
-        trades: List[Union[BuyTrade, SellTrade, ShareReorg]] = [
+        trades: Sequence[Union[BuyTrade, SellTrade]] = [
             BuyTrade(
                 "AMD",
                 datetime.date(2021, 10, 5),
@@ -225,7 +225,7 @@ class TestCalculator(unittest.TestCase):
         (£2,080 disposal proceeds), incurring dealing costs of
         £105 including VAT."""
 
-        trades: List[Union[BuyTrade, SellTrade, ShareReorg]] = [
+        trades: Sequence[Union[BuyTrade, SellTrade]] = [
             BuyTrade(
                 "Lobster plc",
                 datetime.date(2014, 4, 1),
@@ -274,7 +274,7 @@ class TestCalculator(unittest.TestCase):
         150 shares are removed from 2000 shares
         the remaining cost is 8000 - 8000 * 216.666/2000 = £7133.33...
         """
-        trades = [
+        trades: Sequence[Union[BuyTrade, SellTrade]] = [
             BuyTrade(
                 "Lobster plc",  # £4 per share
                 datetime.date(2020, 5, 1),
@@ -293,6 +293,14 @@ class TestCalculator(unittest.TestCase):
                 Decimal(100),
                 Money(Decimal(100)),
             ),
+            BuyTrade(
+                "Lobster plc",  # £2 per share pre-split
+                datetime.date(2020, 5, 5),
+                Decimal(5400),
+                Money(Decimal(1800)),
+            ),
+        ]
+        share_reorg = [
             ShareReorg(
                 "Lobster plc",
                 datetime.date(2020, 5, 3),
@@ -307,14 +315,8 @@ class TestCalculator(unittest.TestCase):
                 Decimal(0),
                 Fraction(2),
             ),
-            BuyTrade(
-                "Lobster plc",  # £2 per share pre-split
-                datetime.date(2020, 5, 5),
-                Decimal(5400),
-                Money(Decimal(1800)),
-            ),
         ]
-        test = CgtCalculator(trades)
+        test = CgtCalculator(trades, share_reorg)
         section104 = test.calculate_tax()
         self.assertAlmostEqual(
             Decimal("1833.3333333"), trades[1].calculation_status.total_gain
@@ -331,6 +333,14 @@ class TestCalculator(unittest.TestCase):
                 Decimal(2000),
                 Money(Decimal(12000)),
             ),
+            SellTrade(
+                "Lobster plc",
+                datetime.date(2020, 6, 2),
+                Decimal(5400),
+                Money(Decimal(21600)),
+            ),
+        ]
+        share_reorg = [
             ShareReorg(
                 "Lobster plc",
                 datetime.date(2020, 5, 3),
@@ -345,15 +355,9 @@ class TestCalculator(unittest.TestCase):
                 Decimal(0),
                 Fraction(6),
             ),
-            SellTrade(
-                "Lobster plc",
-                datetime.date(2020, 6, 2),
-                Decimal(5400),
-                Money(Decimal(21600)),
-            ),
         ]
-        test = CgtCalculator(trades)
+        test = CgtCalculator(trades, share_reorg)
         section104 = test.calculate_tax()
-        self.assertEqual(10800, trades[3].calculation_status.total_gain)
+        self.assertEqual(10800, trades[1].calculation_status.total_gain)
         self.assertEqual(600, section104.quantity)
         self.assertEqual(1200, section104.cost)

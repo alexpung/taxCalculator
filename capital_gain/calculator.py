@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 from fractions import Fraction
-from typing import Sequence, Union
+from typing import Optional, Sequence, Union
 
 from .exception import MixedTickerError
 from .model import BuyTrade, MatchType, Section104, SellTrade, ShareReorg, Trade
@@ -15,7 +15,9 @@ class CgtCalculator:
     """
 
     def __init__(
-        self, transaction_list: Sequence[Union[BuyTrade, SellTrade, ShareReorg]]
+        self,
+        transaction_list: Sequence[Union[BuyTrade, SellTrade]],
+        corp_action_list: Optional[Sequence[ShareReorg]] = None,
     ) -> None:
         ticker = transaction_list[0].ticker
         # Check the list of transactions and corp_action are of same symbol
@@ -24,13 +26,8 @@ class CgtCalculator:
             if transaction.ticker != ticker:
                 raise MixedTickerError(transaction.ticker, ticker)
             transaction.clear_calculation()
-        self.trade_list: list[Union[BuyTrade, SellTrade]] = []
-        self.corp_action_list: list[ShareReorg] = []
-        for transaction in transaction_list:
-            if isinstance(transaction, (BuyTrade, SellTrade)):
-                self.trade_list.append(transaction)
-            if isinstance(transaction, ShareReorg):
-                self.corp_action_list.append(transaction)
+        self.trade_list = list(transaction_list)
+        self.corp_action_list = list(corp_action_list) if corp_action_list else []
         self.section104 = Section104(ticker, Decimal(0), Decimal(0))
 
     def calculate_tax(self) -> Section104:

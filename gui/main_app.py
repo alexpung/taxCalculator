@@ -1,5 +1,4 @@
 """ Prototype UI for the App """
-from collections import defaultdict
 from glob import glob
 import re
 from tkinter import Tk, filedialog
@@ -77,12 +76,14 @@ class CalculatorApp(MDApp):
     trade_description = StringProperty()
     trade_table_data = ListProperty()
     trades = ListProperty()
+    corp_actions = ListProperty()
     date_range = ObjectProperty()
+    section_104 = ObjectProperty()
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.dividends: List[Dividend] = []
-        self.section104: List[Section104] = []
+        self.section104: Section104
 
     def build(self) -> Any:
         return Builder.load_file("kivymd.kv")
@@ -107,18 +108,10 @@ class CalculatorApp(MDApp):
     def calculate(self, file: str) -> None:
         """invoke calculation of capital gain"""
         self.trades.extend(parse_trade(file))
-        self.trades.extend(parse_corp_action(file))
+        self.corp_actions.extend(parse_corp_action(file))
         self.dividends.extend(parse_dividend(file))
-        trade_bucket = defaultdict(list)
         # clear old section 104 before calculate again
-        self.section104 = []
-        # put trades with the same symbol together and calculate tax
-        for trade in self.trades:
-            trade_bucket[trade.ticker].append(trade)
-        for _, trade_list in trade_bucket.items():
-            section104_single = CgtCalculator(trade_list).calculate_tax()
-            if section104_single.quantity > 0:
-                self.section104.append(section104_single)
+        self.section104 = CgtCalculator(self.trades, self.corp_actions).calculate_tax()
         # sort the results and put it in the table
         self.trades = sorted(self.trades, key=lambda x: (x.ticker, x.transaction_date))
         self.update_table()
