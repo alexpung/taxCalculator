@@ -6,14 +6,14 @@ from typing import DefaultDict, List
 from capital_gain.model import Section104, Trade
 
 
-def show_section104_and_short(trades: List[Trade], section104_list: List[Section104]):
+def show_section104_and_short(trades: List[Trade], section104: Section104):
     """return text representation for section 104 holding and unmatched short sales"""
     output_text = "Section 104 holding:\n"
-    for section104 in section104_list:
+    for symbol, section104_value in section104.section104_list.items():
         output_text += (
-            f"Symbol: {section104.ticker}\t"
-            f"quantity: {section104.quantity}\t"
-            f"total cost: {section104.cost:.2f}\n"
+            f"Symbol: {symbol}\t"
+            f"quantity: {section104_value.quantity}\t"
+            f"total cost: {section104_value.cost:.2f}\n"
         )
     output_text += "\n"
     short_list = [trade for trade in trades if trade.get_unmatched_share()]

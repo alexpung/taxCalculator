@@ -160,3 +160,7 @@ class CgtCalculator:
         merged_list.sort()
         for transaction in merged_list:
             transaction.match_with_section104(self.section104)
+
+    def get_section104(self):
+        """get the pool of section 104 shares"""
+        return self.section104
