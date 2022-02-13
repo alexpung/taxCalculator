@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from dataclasses import dataclass, field
 import datetime
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
-from typing import ClassVar
+from typing import ClassVar, DefaultDict
 
 from iso4217 import Currency
 
@@ -167,18 +168,17 @@ class ShareReorg(Transaction):
 
     def match_with_section104(self, section_104: Section104) -> None:
         """Changing section 104 pool due to share split/merge"""
-        old_qty = section_104.quantity
-        section_104.quantity = (
-            section_104.quantity
-            * Decimal(self.ratio.numerator)
-            / Decimal(self.ratio.denominator)
+        old_qty = section_104.get_qty(self.ticker)
+        section_104.set_qty(
+            self.ticker,
+            old_qty * Decimal(self.ratio.numerator) / Decimal(self.ratio.denominator),
         )
         self.comment += (
             f"Share {self.ticker} split/merge at date {self.transaction_date} with "
             f"ratio {self.ratio.denominator} to {self.ratio.numerator}.\n"
             f"Old quantity of Section 104 is {old_qty}\n"
             f"New quantity is now "
-            f"{section_104.quantity}\n"
+            f"{section_104.get_qty(self.ticker)}\n"
         )
 
 
@@ -277,18 +277,18 @@ class BuyTrade(Trade):
             return
         fee_cost = self.get_partial_fee(remaining_shares)
         total_cost = self.get_partial_value(remaining_shares) + fee_cost
-        old_qty = section_104.quantity
-        old_cost = section_104.cost
-        section_104.add_to_section104(remaining_shares, total_cost)
+        old_qty = section_104.get_qty(self.ticker)
+        old_cost = section_104.get_cost(self.ticker)
+        section_104.add_to_section104(self.ticker, remaining_shares, total_cost)
         self.calculation_status.unmatched = Decimal(0)
         self.calculation_status.comment += (
             f"{remaining_shares} share(s) added to Section104 pool "
             f"with allowable cost £{total_cost:.2f} "
             f"including dealing cost £{fee_cost:.2f}.\n"
             f"Total number of share(s) for section 104 "
-            f"changes from {old_qty} to {section_104.quantity}.\n"
+            f"changes from {old_qty} to {section_104.get_qty(self.ticker)}.\n"
             f"Total allowable cost change from £{old_cost:.2f} to "
-            f"£{section_104.cost:.2f}\n\n"
+            f"£{section_104.get_cost(self.ticker):.2f}\n\n"
         )
 
 
@@ -304,17 +304,17 @@ class SellTrade(Trade):
 
     def match_with_section104(self, section_104: Section104) -> None:
         """Matching a disposal with section104 pool"""
-        matched_qty = min(self.get_unmatched_share(), section_104.quantity)
+        matched_qty = min(self.get_unmatched_share(), section_104.get_qty(self.ticker))
         if matched_qty == 0:
             return
-        buy_cost = section_104.remove_from_section104(matched_qty)
+        buy_cost = section_104.remove_from_section104(self.ticker, matched_qty)
         self.calculation_status.match(matched_qty)
         self.calculation_status.comment += (
             f"{matched_qty} share(s) removed from Section104 pool "
             f"with allowable cost £{buy_cost:.2f}.\n"
             f"New total number of share(s) for section 104 "
-            f"is {section_104.quantity}.\n"
-            f"New total allowable cost is £{section_104.cost:.2f}\n\n"
+            f"is {section_104.get_qty(self.ticker)}.\n"
+            f"New total allowable cost is £{section_104.get_cost(self.ticker):.2f}\n\n"
         )
         self.capital_gain_calc(matched_qty, buy_cost)
 
@@ -362,29 +362,55 @@ class SellTrade(Trade):
         )
 
 
-@dataclass
 class Section104:
     """Data class for storing section 104 pool of shares"""
 
-    ticker: str
-    quantity: Decimal
-    cost: Decimal
+    def __init__(self):
+        self.section104_list: DefaultDict[str, Section104Value] = defaultdict(
+            Section104Value
+        )
 
-    def add_to_section104(self, qty: Decimal, cost: Decimal) -> None:
+    def add_to_section104(self, symbol: str, qty: Decimal, cost: Decimal) -> None:
         """Handle adding shares to section 104 pool"""
-        self.quantity += qty
-        self.cost += cost
 
-    def remove_from_section104(self, qty: Decimal) -> Decimal:
+        self.section104_list[symbol].cost += cost
+        self.section104_list[symbol].quantity += qty
+
+    def remove_from_section104(self, symbol: str, qty: Decimal) -> Decimal:
         """Handle removing shares to section 104 pool
         return allowable cost of the removed shares
         """
-        if qty > self.quantity:
+        if qty > self.section104_list[symbol].quantity:
             raise ValueError(
-                f"Attempt to remove {qty} from {self.quantity} "
-                f"from section 104 pool of {self.ticker}"
+                f"Attempt to remove {qty} from {self.section104_list[symbol].quantity} "
+                f"from section 104 pool of {symbol}"
             )
-        allowable_cost = self.cost * qty / self.quantity
-        self.cost -= allowable_cost
-        self.quantity -= qty
+        allowable_cost = (
+            self.section104_list[symbol].cost
+            * qty
+            / self.section104_list[symbol].quantity
+        )
+        self.section104_list[symbol].cost -= allowable_cost
+        self.section104_list[symbol].quantity -= qty
         return allowable_cost
+
+    def get_qty(self, symbol):
+        """Return number of shares in the section104 pool of a symbol"""
+        return self.section104_list[symbol].quantity
+
+    def set_qty(self, symbol, qty):
+        """Setting the number of shares in the section104 pool, in case of
+        stock split"""
+        self.section104_list[symbol].quantity = qty
+
+    def get_cost(self, symbol):
+        """Return the allowable cost in the section104 pool of a symbol"""
+        return self.section104_list[symbol].cost
+
+
+@dataclass
+class Section104Value:
+    """dataclass to store quantity and allowable cost for section 104"""
+
+    quantity: Decimal = Decimal(0)
+    cost: Decimal = Decimal(0)

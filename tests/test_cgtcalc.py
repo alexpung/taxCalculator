@@ -6,7 +6,6 @@ from typing import Sequence, Union
 import unittest
 
 from capital_gain.calculator import CgtCalculator
-from capital_gain.exception import MixedTickerError
 from capital_gain.model import (
     BuyTrade,
     CorporateActionType,
@@ -39,65 +38,8 @@ class TestCalculator(unittest.TestCase):
         test.calculate_tax()
         self.assertEqual(
             50,
-            test.trade_list[1].get_unmatched_share(),
+            trades[1].get_unmatched_share(),
         )
-
-    def test_mixed_ticker(self) -> None:
-        """To test that an error is raised when transaction list has mixed ticker
-
-        Expected result: Raise MixedTickerError since different Ticker is mixed in.
-        """
-        trades = [
-            BuyTrade(
-                "AMD",
-                datetime.date(2021, 10, 5),
-                Decimal(100),
-                Money(Decimal(10000)),
-            ),
-            BuyTrade(
-                "AMD",
-                datetime.date(2021, 10, 6),
-                Decimal(100),
-                Money(Decimal(10000)),
-            ),
-            BuyTrade(
-                "JMD",
-                datetime.date(2021, 10, 6),
-                Decimal(100),
-                Money(Decimal(10000)),
-            ),
-        ]
-        self.assertRaises(MixedTickerError, CgtCalculator, trades)
-
-    def test_unmixed_ticker(self) -> None:
-        """To test that the calculator do not raise an error when no mixed tickers
-
-        Expected result: No MixedTickerError is raised
-        """
-        trades = [
-            BuyTrade(
-                "AMD",
-                datetime.date(2021, 10, 5),
-                Decimal(100),
-                Money(Decimal(10000)),
-            ),
-            BuyTrade(
-                "AMD",
-                datetime.date(2021, 10, 6),
-                Decimal(110),
-                Money(Decimal(10000)),
-            ),
-            BuyTrade(
-                "AMD",
-                datetime.date(2021, 10, 6),
-                Decimal(100),
-                Money(Decimal(12000)),
-            ),
-        ]
-        try:
-            CgtCalculator(trades)
-        except MixedTickerError:
-            self.fail("MixedTickerError raised with same tracker.")
 
     def test_same_day_matching(self) -> None:
         """To test that same day matching function works
@@ -144,8 +86,8 @@ class TestCalculator(unittest.TestCase):
             ),
         ]
         test = CgtCalculator(trades)
-        test.match_same_day_disposal()
-        self.assertEqual(test.trade_list[3].get_total_gain_exclude_loss(), 800)
+        test.match_same_day_disposal(test.ticker_transaction_list["AMD"])
+        self.assertEqual(trades[3].get_total_gain_exclude_loss(), 800)
 
     def test_bed_and_breakfast_matching(self) -> None:
         """To test bread and breakfast matching works and
@@ -206,9 +148,9 @@ class TestCalculator(unittest.TestCase):
             ),
         ]
         test = CgtCalculator(trades)
-        test.match_bed_and_breakfast_disposal()
-        self.assertEqual(test.trade_list[1].get_total_gain_exclude_loss(), 800)
-        self.assertEqual(test.trade_list[4].get_total_gain_exclude_loss(), 400)
+        test.match_bed_and_breakfast_disposal(test.ticker_transaction_list["AMD"])
+        self.assertEqual(trades[1].get_total_gain_exclude_loss(), 800)
+        self.assertEqual(trades[4].get_total_gain_exclude_loss(), 400)
 
     def test_hmrc_example3(self) -> None:
         """
@@ -257,10 +199,12 @@ class TestCalculator(unittest.TestCase):
         ]
         test = CgtCalculator(trades)
         test.calculate_tax()
-        self.assertEqual(int(test.section104.cost), int(Decimal(1674.66666666667)))
-        self.assertEqual(test.section104.quantity, Decimal(400))
-        self.assertEqual(int(test.trade_list[2].get_total_gain_exclude_loss()), 329)
-        self.assertEqual(int(test.trade_list[3].get_total_gain_exclude_loss()), 300)
+        self.assertEqual(
+            int(test.section104.get_cost("Lobster plc")), int(Decimal(1674.66666666667))
+        )
+        self.assertEqual(test.section104.get_qty("Lobster plc"), Decimal(400))
+        self.assertEqual(int(trades[2].get_total_gain_exclude_loss()), 329)
+        self.assertEqual(int(trades[3].get_total_gain_exclude_loss()), 300)
 
     def test_share_split_bed_and_breakfast(self):
         """Testing an extreme case where 2 stock split occurs
@@ -321,8 +265,10 @@ class TestCalculator(unittest.TestCase):
         self.assertAlmostEqual(
             Decimal("1833.3333333"), trades[1].calculation_status.total_gain
         )
-        self.assertEqual(10700, section104.quantity)
-        self.assertAlmostEqual(Decimal("7133.3333333"), section104.cost)
+        self.assertEqual(10700, section104.get_qty("Lobster plc"))
+        self.assertAlmostEqual(
+            Decimal("7133.3333333"), section104.get_cost("Lobster plc")
+        )
 
     def test_share_split_section104(self):
         """Testing section104 handling when stock split occurs"""
@@ -359,5 +305,5 @@ class TestCalculator(unittest.TestCase):
         test = CgtCalculator(trades, share_reorg)
         section104 = test.calculate_tax()
         self.assertEqual(10800, trades[1].calculation_status.total_gain)
-        self.assertEqual(600, section104.quantity)
-        self.assertEqual(1200, section104.cost)
+        self.assertEqual(600, section104.get_qty("Lobster plc"))
+        self.assertEqual(1200, section104.get_cost("Lobster plc"))

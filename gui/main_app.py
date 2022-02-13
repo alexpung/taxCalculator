@@ -111,7 +111,7 @@ class CalculatorApp(MDApp):
         self.corp_actions.extend(parse_corp_action(file))
         self.dividends.extend(parse_dividend(file))
         # clear old section 104 before calculate again
-        self.section104 = CgtCalculator(self.trades, self.corp_actions).calculate_tax()
+        CgtCalculator(self.trades, self.corp_actions).calculate_tax()
         # sort the results and put it in the table
         self.trades = sorted(self.trades, key=lambda x: (x.ticker, x.transaction_date))
         self.update_table()
