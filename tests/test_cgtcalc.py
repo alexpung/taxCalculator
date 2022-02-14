@@ -292,3 +292,53 @@ class TestCalculator(unittest.TestCase):
         self.assertEqual(10800, trades[1].calculation_status.total_gain)
         self.assertEqual(600, section104.get_qty("Lobster plc"))
         self.assertEqual(1200, section104.get_cost("Lobster plc"))
+
+    def test_share_reorg_accuracy(self):
+        """test that section 104 pool retain good accuracy when
+        one divided by three accuracy problem occurred"""
+        trades = [
+            BuyTrade(
+                "Lobster plc",
+                datetime.date(2020, 5, 1),
+                Decimal(1000),
+                Money(Decimal(10000)),
+            ),
+            SellTrade(
+                "Lobster plc",
+                datetime.date(2020, 6, 2),
+                Decimal(1000),
+                Money(Decimal(10000)),
+            ),
+            BuyTrade(
+                "Lobster plc",
+                datetime.date(2020, 6, 10),
+                Decimal(1000),
+                Money(Decimal(10000)),
+            ),
+            BuyTrade(
+                "Lobster plc",
+                datetime.date(2020, 6, 11),
+                Decimal(1000),
+                Money(Decimal(10000)),
+            ),
+            BuyTrade(
+                "Lobster plc",
+                datetime.date(2020, 6, 12),
+                Decimal(1000),
+                Money(Decimal(10000)),
+            ),
+        ]
+        share_reorg = [
+            ShareReorg(
+                "Lobster plc",
+                datetime.date(2020, 6, 9),
+                CorporateActionType.SHARE_SPLIT,
+                Decimal(0),
+                Fraction(3, 1),
+            )
+        ]
+        test = CgtCalculator(trades, share_reorg)
+        test.calculate_tax()
+        section104 = test.get_section104()
+        self.assertAlmostEqual(3000, section104.get_qty("Lobster plc"))
+        self.assertAlmostEqual(10000, section104.get_cost("Lobster plc"))

@@ -51,6 +51,4 @@ Design notes:
           Decimal('1E-26')
           >>> x == 0
           False
-    - The share holding is set to 0 by: (same for section 104 holding)
-    -     if value < 0.0001:
-              self.unmatched = Decimal(0)
+    - Given this rounding issue I decided to make rounding at the text output and GUI, as the internal accuracy is sufficient for tax purpose.

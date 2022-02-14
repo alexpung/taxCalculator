@@ -176,9 +176,9 @@ class ShareReorg(Transaction):
         self.comment += (
             f"Share {self.ticker} split/merge at date {self.transaction_date} with "
             f"ratio {self.ratio.denominator} to {self.ratio.numerator}.\n"
-            f"Old quantity of Section 104 is {old_qty}\n"
+            f"Old quantity of Section 104 is {old_qty:2f}\n"
             f"New quantity is now "
-            f"{section_104.get_qty(self.ticker)}\n"
+            f"{section_104.get_qty(self.ticker):2f}\n"
         )
 
 
@@ -223,7 +223,8 @@ class Trade(Transaction, ABC):
         bed and breakfast"""
         self.calculation_status.match(qty)
         self.calculation_status.comment += (
-            f"{match_type} matched with trade ID {trade_id} for {qty} share(s)"
+            f"{match_type.value} matched with trade ID"
+            f" {trade_id} for {qty:.2f} share(s)"
         )
 
     def get_total_gain_exclude_loss(self):
@@ -254,12 +255,13 @@ class Trade(Transaction, ABC):
             f"Trade Date: {self.transaction_date.strftime('%d %b %Y')}\n"
             f"Transaction Type: {self.transaction_type}\n"
             f"Quantity: {self.size:2f}\n"
-            f"Gross trade value:\n"
-            f"{self.transaction_value}"
+            f"Gross trade value: "
+            f"£{self.transaction_value.get_value():2f}"
             f"\nTotal incidental cost: "
             f"£{sum(fee.get_value() for fee in self.fee_and_tax):.2f}\n"
             f"{fee_string}"
             f"{short_share}"
+            f"Total capital gain (loss): £{self.calculation_status.total_gain:.2f}\n"
             f"\n{self.calculation_status.comment}"
         )
 
@@ -282,11 +284,11 @@ class BuyTrade(Trade):
         section_104.add_to_section104(self.ticker, remaining_shares, total_cost)
         self.calculation_status.unmatched = Decimal(0)
         self.calculation_status.comment += (
-            f"{remaining_shares} share(s) added to Section104 pool "
+            f"{remaining_shares:2f} share(s) added to Section104 pool "
             f"with allowable cost £{total_cost:.2f} "
             f"including dealing cost £{fee_cost:.2f}.\n"
             f"Total number of share(s) for section 104 "
-            f"changes from {old_qty} to {section_104.get_qty(self.ticker)}.\n"
+            f"changes from {old_qty:2f} to {section_104.get_qty(self.ticker):2f}.\n"
             f"Total allowable cost change from £{old_cost:.2f} to "
             f"£{section_104.get_cost(self.ticker):.2f}\n\n"
         )
@@ -310,10 +312,10 @@ class SellTrade(Trade):
         buy_cost = section_104.remove_from_section104(self.ticker, matched_qty)
         self.calculation_status.match(matched_qty)
         self.calculation_status.comment += (
-            f"{matched_qty} share(s) removed from Section104 pool "
+            f"{matched_qty:.2f} share(s) removed from Section104 pool "
             f"with allowable cost £{buy_cost:.2f}.\n"
             f"New total number of share(s) for section 104 "
-            f"is {section_104.get_qty(self.ticker)}.\n"
+            f"is {section_104.get_qty(self.ticker):.2f}.\n"
             f"New total allowable cost is £{section_104.get_cost(self.ticker):.2f}\n\n"
         )
         self.capital_gain_calc(matched_qty, buy_cost)
@@ -357,8 +359,9 @@ class SellTrade(Trade):
     ):
         """Comment when a share split occurs during bed and breakfast matching"""
         self.calculation_status.comment += (
-            f"Acquisition of size {to_match_buy} is matched to disposal of "
-            f"size {to_match_sell} due to forward/reverse split with ratio {ratio}.\n"
+            f"Acquisition of size {to_match_buy:.2f} is matched to disposal of "
+            f"size {to_match_sell:.2f} due to forward/reverse split "
+            f"with ratio {ratio}.\n"
         )
 
 
@@ -382,7 +385,8 @@ class Section104:
         """
         if qty > self.section104_list[symbol].quantity:
             raise ValueError(
-                f"Attempt to remove {qty} from {self.section104_list[symbol].quantity} "
+                f"Attempt to remove {qty:2f} from "
+                f"{self.section104_list[symbol].quantity} "
                 f"from section 104 pool of {symbol}"
             )
         allowable_cost = (
