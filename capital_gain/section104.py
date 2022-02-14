@@ -10,11 +10,12 @@ def show_section104_and_short(trades: List[Trade], section104: Section104):
     """return text representation for section 104 holding and unmatched short sales"""
     output_text = "Section 104 holding:\n"
     for symbol, section104_value in section104.section104_list.items():
-        output_text += (
-            f"Symbol: {symbol}\t"
-            f"quantity: {section104_value.quantity}\t"
-            f"total cost: {section104_value.cost:.2f}\n"
-        )
+        if section104_value.cost != 0 or section104_value.quantity != 0:
+            output_text += (
+                f"Symbol: {symbol}\t"
+                f"quantity: {section104_value.quantity}\t"
+                f"total cost: {section104_value.cost:.2f}\n"
+            )
     output_text += "\n"
     short_list = [trade for trade in trades if trade.get_unmatched_share()]
     if short_list:
