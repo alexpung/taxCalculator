@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from copy import deepcopy
 from fractions import Fraction
 from typing import DefaultDict, Optional, Sequence, Union
 
@@ -10,14 +11,18 @@ from .model import BuyTrade, MatchType, Section104, SellTrade, ShareReorg, Trade
 
 class CgtCalculator:
     """To calculate capital gain
-    self.ticker_transaction_list: Dict of buy/sell trades with key=ticker
-    self.corp_action_list: A list of corporate actions (mixed ticker)
+    transaction_list: Sequence of BuyTrade, SellTrade objects that represent trade
+    history
+    corp_action_list: Optional sequence of share split events that occurred
+    init_section104: Optional If old histories of trade is missing you can provide the
+    initial state of the section104 pool instead
     """
 
     def __init__(
         self,
         transaction_list: Sequence[Union[BuyTrade, SellTrade]],
         corp_action_list: Optional[Sequence[ShareReorg]] = None,
+        init_section104: Optional[Section104] = None,
     ) -> None:
         self.ticker_transaction_list: DefaultDict[
             str, list[Union[BuyTrade, SellTrade]]
@@ -32,7 +37,10 @@ class CgtCalculator:
             for corp_action in corp_action_list:
                 corp_action.clear_calculation()
                 self.ticker_corp_action_list[corp_action.ticker].append(corp_action)
-        self.section104 = Section104()
+        if init_section104 is not None:
+            self.section104 = deepcopy(init_section104)
+        else:
+            self.section104 = Section104()
 
     def calculate_tax(self) -> Section104:
         """To calculate chargeable gain and

@@ -2,7 +2,7 @@
 from glob import glob
 import re
 from tkinter import Tk, filedialog
-from typing import Any, List
+from typing import Any, Final, List
 
 from kivy.config import Config
 from kivy.lang import Builder
@@ -15,6 +15,9 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.datatables import MDDataTable
 from kivymd.uix.label import MDLabel
 from kivymd.uix.list import OneLineIconListItem
+from tomlkit import parse
+from tomlkit.container import Container
+from tomlkit.exceptions import NonExistentKey
 
 from capital_gain.calculator import CgtCalculator
 import capital_gain.capital_summary as summary
@@ -73,6 +76,7 @@ class ItemDrawer(OneLineIconListItem):
 class CalculatorApp(MDApp):
     """Main application"""
 
+    _CONFIG_FILE: Final = "init.toml"
     trade_description = StringProperty()
     trade_table_data = ListProperty()
     trades = ListProperty()
@@ -84,6 +88,29 @@ class CalculatorApp(MDApp):
         super().__init__(**kwargs)
         self.dividends: List[Dividend] = []
         self.section104: Section104
+        try:
+            with open(self._CONFIG_FILE, encoding="utf-8") as config_file:
+                parsed_content = parse(config_file.read())
+                self.section104_init = Section104()
+                if not isinstance(parsed_content["Section104"], Container):
+                    raise ImportError(
+                        "Heading incorrect: " "heading should be '[[Section104]]'"
+                    )
+                for entry in parsed_content["Section104"].value:
+                    self.section104_init.add_to_section104(
+                        entry["symbol"], entry["quantity"], entry["value"]
+                    )
+        except FileNotFoundError:
+            print(
+                "Section104 initialization file (init.toml) not found, "
+                "pool will be calculated only from trade"
+            )
+        except NonExistentKey:
+            print(
+                "Key for section 104 not found/incorrect, "
+                "heading should be [['Section104']], "
+                "keys are 'symbol', 'quantity', 'value'"
+            )
 
     def build(self) -> Any:
         return Builder.load_file("kivymd.kv")
@@ -110,7 +137,7 @@ class CalculatorApp(MDApp):
         self.trades.extend(parse_trade(file))
         self.corp_actions.extend(parse_corp_action(file))
         self.dividends.extend(parse_dividend(file))
-        calculator = CgtCalculator(self.trades, self.corp_actions)
+        calculator = CgtCalculator(self.trades, self.corp_actions, self.section104_init)
         calculator.calculate_tax()
         self.section_104 = calculator.get_section104()
         self.update_table()
