@@ -19,6 +19,7 @@ To help report UK tax for dividend and capital gain.
 3. For each trade calculation steps are shown (in export text file or GUI windows)
 4. Show section 104 holdings and sell that are unmatched with a buy (i.e. short sale)
 5. Show trades in the GUI to allow user double-checking.
+6. Allow user to specify the initial section 104 pool (in case old trades cannot be found) (\gui\init.toml)
 
 Known limitation:
 
