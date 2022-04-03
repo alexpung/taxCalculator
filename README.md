@@ -34,22 +34,16 @@ To set up:
 
 Design notes:
 
-1.  When a share forward or reverse split occurs it is assumed that the decimal shares will be kept. But it is possible that
-    the decimal shares are lost and be given cash in lieu.
-2.  Rounding problem:
-    - Consider the following scenario:
-    1. Long time ago you bought 100 shares of Company 'XYZ'
-    2. Day 1: You sold 100 shares of Company 'XYZ'
-    3. Day 10: Company undergone a forward split with ratio 3-to-1
-    4. Day 11,12,13: You bought back 100 shares each day (one-third of your holding)
-    - Internally I am using the Decimal class you would have a rounding problem for share matching. Internally this is rounded to 0
-    -     >>> x = Decimal(100)
-          >>> (x := x - Decimal(100)/Decimal(3))
-          Decimal('66.66666666666666666666666667')
-          >>> (x := x - Decimal(100)/Decimal(3))
-          Decimal('33.33333333333333333333333334')
-          >>> (x := x - Decimal(100)/Decimal(3))
-          Decimal('1E-26')
-          >>> x == 0
-          False
-    - Given this rounding issue I decided to make rounding at the text output and GUI, as the internal accuracy is sufficient for tax purpose.
+1. When a share forward or reverse split occurs it is assumed that the decimal shares will be kept. But it is possible that
+   the decimal shares are lost and be given cash in lieu.
+2. Share matching rules are implemented according to: https://rppaccounts.co.uk/taxation-of-shares/
+   1. acquisitions on the same day as the disposal
+   2. acquisitions within 30 days after the day of disposal (except where made by a non-resident). Disposals are identified first with securities acquired earlier within the 30-day period after disposal – the First In First Out basis (FIFO)
+   3. any shares acquired before the date of disposal which are included in an expanded ‘s. 104 holding’
+   4. if the above identification rules fail to exhaust the shares disposed of, they are to be identified with subsequent acquisitions beyond the 30-day period following the disposal.
+
+Note point #4 when buying back shorted shares #1 (same day rule) and #2 (bed&breakfast) still applies. 3. Rounding problem: - Consider the following scenario: 1. Long time ago you bought 100 shares of Company 'XYZ' 2. Day 1: You sold 100 shares of Company 'XYZ' 3. Day 10: Company undergone a forward split with ratio 3-to-1 4. Day 11,12,13: You bought back 100 shares each day (one-third of your holding) - Internally I am using the Decimal class you would have a rounding problem for share matching. Internally this is rounded to 0 - >>> x = Decimal(100) >>> (x := x - Decimal(100)/Decimal(3))
+Decimal('66.66666666666666666666666667') >>> (x := x - Decimal(100)/Decimal(3))
+Decimal('33.33333333333333333333333334') >>> (x := x - Decimal(100)/Decimal(3))
+Decimal('1E-26') >>> x == 0
+False - Given this rounding issue I decided to make rounding at the text output and GUI, as the internal accuracy is sufficient for tax purpose.
