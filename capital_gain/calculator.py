@@ -50,12 +50,11 @@ class CgtCalculator:
         self.match_section104()
         return self.section104
 
-    @staticmethod
     def _match(
+        self,
         buy_transaction: BuyTrade,
         sell_transaction: SellTrade,
         match_type: MatchType,
-        ratio: Fraction = Fraction(1),
     ) -> None:
         """Calculate capital gain if two transactions are matched with same day or
         bed and breakfast rules
@@ -65,6 +64,7 @@ class CgtCalculator:
         e.g. for a stock split 3-to-2, the ratio should be set to Fraction (3, 2)
         if it happens between the matching buy and sell trade
         """
+        ratio = self.check_share_split(buy_transaction, sell_transaction)
         if buy_transaction.transaction_date > sell_transaction.transaction_date:
             to_match = min(
                 sell_transaction.calculation_status.unmatched
@@ -154,13 +154,19 @@ class CgtCalculator:
                     and isinstance(x, BuyTrade)
                 ]
                 for buy_transaction in matched_transactions_list:
-                    ratio = self.check_share_split(buy_transaction, sell_transaction)
                     self._match(
-                        buy_transaction,
-                        sell_transaction,
-                        MatchType.BED_AND_BREAKFAST,
-                        ratio,
+                        buy_transaction, sell_transaction, MatchType.BED_AND_BREAKFAST
                     )
+
+    def check_cover_short(self, buy_transaction: BuyTrade):
+        """Check and match when there is selling short then buy to cover"""
+        unclosed_short_list = self.section104.short_list
+        unclosed_short_list.sort()
+        for short_transaction in unclosed_short_list:
+            if buy_transaction.ticker == short_transaction.ticker:
+                self._match(buy_transaction, short_transaction, MatchType.SHORT_COVER)
+            if short_transaction.get_unmatched_share() == 0:
+                self.section104.short_list.remove(short_transaction)
 
     def match_section104(self) -> None:
         """To handle section 104 share matching"""
@@ -169,8 +175,13 @@ class CgtCalculator:
                 *trade_list,
                 *self.ticker_corp_action_list[ticker],
             ]
+            # process transaction by chronological order
             merged_list.sort()
             for transaction in merged_list:
+                # before putting a buy trade to section104 we have to check
+                # if this stock is shorted and have to match with the short sell trade
+                if isinstance(transaction, BuyTrade):
+                    self.check_cover_short(transaction)
                 transaction.match_with_section104(self.section104)
 
     def get_section104(self):
