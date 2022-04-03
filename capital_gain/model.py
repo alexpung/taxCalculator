@@ -8,7 +8,7 @@ import datetime
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
-from typing import ClassVar, DefaultDict
+from typing import ClassVar, DefaultDict, List
 
 from iso4217 import Currency
 
@@ -369,12 +369,14 @@ class SellTrade(Trade):
 
 
 class Section104:
-    """Data class for storing section 104 pool of shares"""
+    """Data class for storing section 104 pool of shares and also keep track of sell
+    short trades"""
 
     def __init__(self):
         self.section104_list: DefaultDict[str, Section104Value] = defaultdict(
             Section104Value
         )
+        self.short_list: List[SellTrade] = []
 
     def add_to_section104(self, symbol: str, qty: Decimal, cost: Decimal) -> None:
         """Handle adding shares to section 104 pool"""
@@ -386,6 +388,9 @@ class Section104:
         """Handle removing shares to section 104 pool
         return allowable cost of the removed shares
         """
+        # handle the case when trying to remove 0 shares from empty pool
+        if qty == 0:
+            return Decimal(0)
         if qty > self.section104_list[symbol].quantity:
             raise ValueError(
                 f"Attempt to remove {qty:2f} from "
@@ -401,16 +406,16 @@ class Section104:
         self.section104_list[symbol].quantity -= qty
         return allowable_cost
 
-    def get_qty(self, symbol):
+    def get_qty(self, symbol: str):
         """Return number of shares in the section104 pool of a symbol"""
         return self.section104_list[symbol].quantity
 
-    def set_qty(self, symbol, qty):
+    def set_qty(self, symbol: str, qty: Decimal):
         """Setting the number of shares in the section104 pool, in case of
         stock split"""
         self.section104_list[symbol].quantity = qty
 
-    def get_cost(self, symbol):
+    def get_cost(self, symbol: str):
         """Return the allowable cost in the section104 pool of a symbol"""
         return self.section104_list[symbol].cost
 
