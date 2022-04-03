@@ -37,6 +37,7 @@ class MatchType(Enum):
     SAME_DAY = "same day"
     BED_AND_BREAKFAST = "bed and breakfast"
     SECTION104 = "section 104"
+    SHORT_COVER = "Cover sell short"
 
 
 @dataclass
@@ -98,8 +99,8 @@ class Transaction(ABC):
     transaction_id_counter: ClassVar[int] = 1
 
     def __post_init__(self) -> None:
-        self.transaction_id = Trade.transaction_id_counter
-        Trade.transaction_id_counter += 1
+        self.transaction_id = Transaction.transaction_id_counter
+        Transaction.transaction_id_counter += 1
 
     def __lt__(self, other: Transaction) -> bool:
         """For sorting of Transaction for gain calculation"""
@@ -306,6 +307,8 @@ class SellTrade(Trade):
 
     def match_with_section104(self, section_104: Section104) -> None:
         """Matching a disposal with section104 pool"""
+        if self.get_unmatched_share() == 0:
+            return
         matched_qty = min(self.get_unmatched_share(), section_104.get_qty(self.ticker))
         if matched_qty == 0:
             return
