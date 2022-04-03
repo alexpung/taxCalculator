@@ -307,14 +307,15 @@ class SellTrade(Trade):
 
     def match_with_section104(self, section_104: Section104) -> None:
         """Matching a disposal with section104 pool"""
-        if self.get_unmatched_share() == 0:
-            return
         matched_qty = min(self.get_unmatched_share(), section_104.get_qty(self.ticker))
         buy_cost = section_104.remove_from_section104(self.ticker, matched_qty)
         self.calculation_status.match(matched_qty)
         # if section 104 is not enough to match all sell shares, it is sell short
         if self.calculation_status.unmatched > 0:
             section_104.short_list.append(self)
+        # there is no need to show calculation if 0 shares are matched
+        if matched_qty == 0:
+            return
         self.calculation_status.comment += (
             f"{matched_qty:.2f} share(s) removed from Section104 pool "
             f"with allowable cost £{buy_cost:.2f}.\n"
