@@ -310,10 +310,11 @@ class SellTrade(Trade):
         if self.get_unmatched_share() == 0:
             return
         matched_qty = min(self.get_unmatched_share(), section_104.get_qty(self.ticker))
-        if matched_qty == 0:
-            return
         buy_cost = section_104.remove_from_section104(self.ticker, matched_qty)
         self.calculation_status.match(matched_qty)
+        # if section 104 is not enough to match all sell shares, it is sell short
+        if self.calculation_status.unmatched > 0:
+            section_104.short_list.append(self)
         self.calculation_status.comment += (
             f"{matched_qty:.2f} share(s) removed from Section104 pool "
             f"with allowable cost £{buy_cost:.2f}.\n"
