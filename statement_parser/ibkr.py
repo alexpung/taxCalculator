@@ -2,6 +2,7 @@
 from datetime import datetime
 from decimal import Decimal
 from fractions import Fraction
+import logging
 import re
 from typing import Union
 import xml.etree.ElementTree as ET
@@ -180,3 +181,83 @@ def parse_corp_action(file: str) -> list[ShareReorg]:
     test = tree.findall(".//CorporateActions/CorporateAction")
     action_list = [x for x in test if x.attrib["type"] in supported_type]
     return [transform_corp_action(action) for action in action_list]
+
+
+def fetch_fx_rate(
+    tree: ET.ElementTree, currency: str, base_currency: str, date: str
+) -> Decimal:
+    """To get IB provided FX rate from the XML file given currency and date.
+    Date format DD-MMM-YY e.g. "27-Jan-21"
+    """
+    # fx rate is 1 if currency is the same as base currency, no need to look up
+    if currency == base_currency:
+        return Decimal(1)
+    fx_rate_node = tree.find(
+        f".//ConversionRates/ConversionRate[@reportDate='{date}']"
+        f"[@fromCurrency='{currency}'][@toCurrency='{base_currency}']"
+    )
+    if fx_rate_node is None:
+        raise ValueError(
+            f"No fx rate found for {currency} against {base_currency} on {date}"
+        )
+    else:
+        result = Decimal(fx_rate_node.attrib["rate"])
+        if result == -1:
+            raise ValueError(
+                f"fx rate is -1 for {currency} against "
+                f"{base_currency} on {date}, this is an error rate"
+            )
+        else:
+            logging.debug(
+                "fx rate for %s against %s on %s is %s",
+                currency,
+                base_currency,
+                date,
+                result,
+            )
+    return result
+
+
+def transform_fx_line(
+    xml_entry: ET.Element, tree: ET.ElementTree, base_currency: str = "GBP"
+) -> Union[BuyTrade, SellTrade, None]:
+    """To transform xml line to trade objects.
+    Return None if no fx activity in the line"""
+    currency = xml_entry.attrib["currency"]
+    raw_date = xml_entry.attrib["reportDate"]
+    date = datetime.strptime(raw_date, "%d-%b-%y").date()
+    if bool(xml_entry.attrib["debit"]) and bool(xml_entry.attrib["credit"]):
+        # hopefully a statement of fund with both credit and debit do not exist
+        # I have not seen it
+        raise ValueError(
+            f"When parsing statement of fund both credit and debit exist\n"
+            f"Currency: {currency}\nDate: {raw_date}"
+        )
+    # in some trade entries the trade have no trade price and debit and credit are 0
+    # probably for a leg in a combo option trade
+    # in this case just ignore it as no fx action done
+    elif not xml_entry.attrib["debit"] and not bool(xml_entry.attrib["credit"]):
+        return None
+    else:
+        quantity = (
+            Decimal(xml_entry.attrib["debit"])
+            if xml_entry.attrib["debit"]
+            else Decimal(xml_entry.attrib["credit"])
+        )
+        fx_rate = fetch_fx_rate(tree, currency, base_currency, raw_date)
+        value = Money(quantity * fx_rate)
+        if xml_entry.attrib["credit"]:
+            return BuyTrade(currency, date, quantity, value)
+        else:
+            return SellTrade(currency, date, quantity, value)
+
+
+def parse_fx_acquisition_and_disposal(file: str) -> list[Union[BuyTrade, SellTrade]]:
+    """Parse xml to extract acquisition and disposal of foreign currency"""
+    tree = ET.parse(file)
+    raw_result = tree.findall(".//StmtFunds/StatementOfFundsLine")
+    return [
+        x
+        for x in [transform_fx_line(line, tree) for line in raw_result]
+        if x is not None
+    ]
