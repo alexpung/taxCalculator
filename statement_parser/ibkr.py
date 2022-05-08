@@ -238,7 +238,7 @@ def transform_fx_line(
         return None
     else:
         quantity = (
-            Decimal(xml_entry.attrib["debit"])
+            abs(Decimal(xml_entry.attrib["debit"]))  # debit is always negative in xml
             if xml_entry.attrib["debit"]
             else Decimal(xml_entry.attrib["credit"])
         )
