@@ -4,7 +4,7 @@ from decimal import Decimal
 from fractions import Fraction
 import logging
 import re
-from typing import Union
+from typing import Any, Dict, Union
 import xml.etree.ElementTree as ET
 
 from iso3166 import countries
@@ -102,25 +102,20 @@ def transform_trade(xml_entry: ET.Element) -> Union[BuyTrade, SellTrade]:
                 "Tax",
             )
         )
+    parameters: Dict[str, Any] = {
+        "ticker": xml_entry.attrib["symbol"],
+        "transaction_date": datetime.strptime(
+            xml_entry.attrib["tradeDate"], "%d-%b-%y"
+        ).date(),
+        "size": abs(Decimal(xml_entry.attrib["quantity"])),
+        "transaction_value": value,
+        "fee_and_tax": fee_and_tax,
+        "description": xml_entry.attrib["description"],
+    }
     if xml_entry.attrib["buySell"] == "BUY":
-        return BuyTrade(
-            xml_entry.attrib["symbol"],
-            datetime.strptime(xml_entry.attrib["tradeDate"], "%d-%b-%y").date(),
-            Decimal(xml_entry.attrib["quantity"]),
-            value,
-            fee_and_tax,
-            description=xml_entry.attrib["description"],
-        )
+        return BuyTrade(**parameters)
     elif xml_entry.attrib["buySell"] == "SELL":
-        return SellTrade(
-            xml_entry.attrib["symbol"],
-            datetime.strptime(xml_entry.attrib["tradeDate"], "%d-%b-%y").date(),
-            # In xml report sell trade have negative quantity, use abs to correct this
-            abs(Decimal(xml_entry.attrib["quantity"])),
-            value,
-            fee_and_tax,
-            description=xml_entry.attrib["description"],
-        )
+        return SellTrade(**parameters)
     else:
         raise ValueError(f"Unexpected Trade Type {xml_entry.attrib['buySell']}")
 
