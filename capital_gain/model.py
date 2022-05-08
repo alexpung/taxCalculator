@@ -198,6 +198,7 @@ class Trade(Transaction, ABC):
     transaction_value: Money
     fee_and_tax: list[Money] = field(default_factory=list)
     transaction_type: str = "Trade"
+    description: str = ""
 
     def __post_init__(self) -> None:
         super().__post_init__()

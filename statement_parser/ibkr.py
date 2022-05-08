@@ -109,6 +109,7 @@ def transform_trade(xml_entry: ET.Element) -> Union[BuyTrade, SellTrade]:
             Decimal(xml_entry.attrib["quantity"]),
             value,
             fee_and_tax,
+            description=xml_entry.attrib["description"],
         )
     elif xml_entry.attrib["buySell"] == "SELL":
         return SellTrade(
@@ -118,6 +119,7 @@ def transform_trade(xml_entry: ET.Element) -> Union[BuyTrade, SellTrade]:
             abs(Decimal(xml_entry.attrib["quantity"])),
             value,
             fee_and_tax,
+            description=xml_entry.attrib["description"],
         )
     else:
         raise ValueError(f"Unexpected Trade Type {xml_entry.attrib['buySell']}")
@@ -226,6 +228,7 @@ def transform_fx_line(
     currency = xml_entry.attrib["currency"]
     raw_date = xml_entry.attrib["reportDate"]
     date = datetime.strptime(raw_date, "%d-%b-%y").date()
+    description = xml_entry.attrib["activityDescription"]
     if bool(xml_entry.attrib["debit"]) and bool(xml_entry.attrib["credit"]):
         # hopefully a statement of fund with both credit and debit do not exist
         # I have not seen it
@@ -247,9 +250,9 @@ def transform_fx_line(
         fx_rate = fetch_fx_rate(tree, currency, base_currency, raw_date)
         value = Money(quantity * fx_rate)
         if xml_entry.attrib["credit"]:
-            return BuyTrade(currency, date, quantity, value)
+            return BuyTrade(currency, date, quantity, value, description=description)
         else:
-            return SellTrade(currency, date, quantity, value)
+            return SellTrade(currency, date, quantity, value, description=description)
 
 
 def parse_fx_acquisition_and_disposal(file: str) -> list[Union[BuyTrade, SellTrade]]:
