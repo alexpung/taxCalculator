@@ -157,8 +157,7 @@ def transform_corp_action(xml_entry: ET.Element) -> ShareReorg:
     result = re.search(ratio_matcher, xml_entry.attrib["actionDescription"])
     if result is None:
         raise ValueError("Cannot find stock split ration from description")
-    else:
-        ratio = Fraction(int(result.group(1)), int(result.group(2)))
+    ratio = Fraction(int(result.group(1)), int(result.group(2)))
     return ShareReorg(
         xml_entry.attrib["symbol"],
         datetime.strptime(
@@ -197,21 +196,19 @@ def fetch_fx_rate(
         raise ValueError(
             f"No fx rate found for {currency} against {base_currency} on {date}"
         )
-    else:
-        result = Decimal(fx_rate_node.attrib["rate"])
-        if result == -1:
-            raise ValueError(
-                f"fx rate is -1 for {currency} against "
-                f"{base_currency} on {date}, this is an error rate"
-            )
-        else:
-            logging.debug(
-                "fx rate for %s against %s on %s is %s",
-                currency,
-                base_currency,
-                date,
-                result,
-            )
+    result = Decimal(fx_rate_node.attrib["rate"])
+    if result == -1:
+        raise ValueError(
+            f"fx rate is -1 for {currency} against "
+            f"{base_currency} on {date}, this is an error rate"
+        )
+    logging.debug(
+        "fx rate for %s against %s on %s is %s",
+        currency,
+        base_currency,
+        date,
+        result,
+    )
     return result
 
 
@@ -234,20 +231,19 @@ def transform_fx_line(
     # in some trade entries the trade have no trade price and debit and credit are 0
     # probably for a leg in a combo option trade
     # in this case just ignore it as no fx action done
-    elif not xml_entry.attrib["debit"] and not bool(xml_entry.attrib["credit"]):
+    if not xml_entry.attrib["debit"] and not bool(xml_entry.attrib["credit"]):
         return None
+    quantity = (
+        abs(Decimal(xml_entry.attrib["debit"]))  # debit is always negative in xml
+        if xml_entry.attrib["debit"]
+        else Decimal(xml_entry.attrib["credit"])
+    )
+    fx_rate = fetch_fx_rate(tree, currency, base_currency, raw_date)
+    value = Money(quantity * fx_rate)
+    if xml_entry.attrib["credit"]:
+        return BuyTrade(currency, date, quantity, value, description=description)
     else:
-        quantity = (
-            abs(Decimal(xml_entry.attrib["debit"]))  # debit is always negative in xml
-            if xml_entry.attrib["debit"]
-            else Decimal(xml_entry.attrib["credit"])
-        )
-        fx_rate = fetch_fx_rate(tree, currency, base_currency, raw_date)
-        value = Money(quantity * fx_rate)
-        if xml_entry.attrib["credit"]:
-            return BuyTrade(currency, date, quantity, value, description=description)
-        else:
-            return SellTrade(currency, date, quantity, value, description=description)
+        return SellTrade(currency, date, quantity, value, description=description)
 
 
 def parse_fx_acquisition_and_disposal(file: str) -> list[Union[BuyTrade, SellTrade]]:
