@@ -16,6 +16,7 @@ def write_dividend_list(
         "Dividend.xlsx", {"default_date_format": "d mmm yyyy"}
     )
     dividend_and_tax_list.sort(key=lambda x: x.transaction_date)
+    summaries.sort(key=lambda x: x.year_and_country.tax_year)
     dividend_list = [x for x in dividend_and_tax_list if x.is_dividend()]
     withholding_list = [x for x in dividend_and_tax_list if x.is_withholding_tax()]
     make_dividend_sheet(workbook, dividend_list, "Dividend List")
