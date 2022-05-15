@@ -141,6 +141,17 @@ class Dividend:
         self.transaction_id = Trade.transaction_id_counter
         Trade.transaction_id_counter += 1
 
+    def is_dividend(self):
+        """check if it is dividend or dividend in lieu"""
+        return (
+            self.transaction_type == DividendType.DIVIDEND
+            or self.transaction_type == DividendType.DIVIDEND_IN_LIEU
+        )
+
+    def is_withholding_tax(self):
+        """check if it is withholding tax"""
+        return self.transaction_type == DividendType.WITHHOLDING
+
 
 @dataclass
 class ShareReorg(Transaction):

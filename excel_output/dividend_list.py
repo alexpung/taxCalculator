@@ -3,7 +3,7 @@
 import xlsxwriter
 from xlsxwriter import Workbook
 
-from capital_gain.model import Dividend, DividendType
+from capital_gain.model import Dividend
 
 
 def write_dividend_list(dividend_and_tax_list: list[Dividend]):
@@ -12,17 +12,8 @@ def write_dividend_list(dividend_and_tax_list: list[Dividend]):
         "Dividend.xlsx", {"default_date_format": "d mmm yyyy"}
     )
     dividend_and_tax_list.sort(key=lambda x: x.transaction_date)
-    dividend_list = [
-        x
-        for x in dividend_and_tax_list
-        if x.transaction_type == DividendType.DIVIDEND
-        or x.transaction_type == DividendType.DIVIDEND_IN_LIEU
-    ]
-    withholding_list = [
-        x
-        for x in dividend_and_tax_list
-        if x.transaction_type == DividendType.WITHHOLDING
-    ]
+    dividend_list = [x for x in dividend_and_tax_list if x.is_dividend()]
+    withholding_list = [x for x in dividend_and_tax_list if x.is_withholding_tax()]
     make_dividend_sheet(workbook, dividend_list, "Dividend List")
     make_dividend_sheet(workbook, withholding_list, "Withholding Tax List")
     workbook.close()
