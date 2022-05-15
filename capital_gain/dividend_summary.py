@@ -1,95 +1,77 @@
 """ To calculate various dividend summary """
 from collections import defaultdict
-import datetime
+from dataclasses import dataclass
 from decimal import Decimal
-from typing import List
 
-from capital_gain.model import Dividend, DividendType
+from capital_gain.model import Dividend
+from const import get_tax_year
 
 
+@dataclass
+class DividendTotal:
+    """data class for storing dividend summary data without country and tax year"""
+
+    total_dividend: Decimal
+    withholding_tax: Decimal
+    net_income: Decimal
+
+
+@dataclass(frozen=True, eq=True)
+class YearAndCountry:
+    """data class for storing year and country of dividend"""
+
+    tax_year: int
+    country: str
+
+
+@dataclass
 class DividendSummary:
-    """calculate summary of dividend and withholding tax received during the period"""
+    """data class for storing dividend summary data"""
 
-    def __init__(
-        self,
-        dividend_list: List[Dividend],
-        tax_year_start: datetime.date,
-        tax_year_end: datetime.date,
-    ):
-        self.dividend_list = list(
-            filter(
-                lambda dividend: tax_year_end
-                >= dividend.transaction_date
-                >= tax_year_start,
-                dividend_list,
-            )
-        )
-        self.tax_year_start = tax_year_start
-        self.tax_year_end = tax_year_end
+    year_and_country: YearAndCountry
+    dividend_summary: DividendTotal
 
-    def get_dividend_by_country(self) -> defaultdict[str, List[Dividend]]:
-        """get dividend and withholding tax by country code"""
-        dividend_by_country: defaultdict[str, List[Dividend]] = defaultdict(list)
-        for dividend in self.dividend_list:
-            dividend_by_country[dividend.country].append(dividend)
-        return dividend_by_country
 
-    def show_dividend_total(self) -> str:
-        """show total dividends"""
-        dividend = self.get_dividend_total(self.dividend_list, DividendType.DIVIDEND)
-        dividend_in_lieu = self.get_dividend_total(
-            self.dividend_list, DividendType.DIVIDEND_IN_LIEU
-        )
-        total_dividend = dividend + dividend_in_lieu
-        withholding_tax = self.get_dividend_total(
-            self.dividend_list, DividendType.WITHHOLDING
-        )
-        net_income = total_dividend - withholding_tax
-        output_string = (
-            f"Total dividends from {self.tax_year_start} to {self.tax_year_end}:\n"
-        )
-        output_string += (
-            f"Total Dividends: £{total_dividend:.2f}\n"
-            f"Foreign withholding tax: £{withholding_tax:.2f}\n"
-            f"Net income received: £{net_income:.2f}\n\n"
-        )
-        return output_string
+def get_dividend_summary(dividend_list: list[Dividend]) -> list[DividendSummary]:
+    """Return dividend summary data given a list of Dividend and withholding tax"""
+    sorted_list = _sort_dividend_list(dividend_list)
+    summary_list = []
+    for year_and_country, dividend_list in sorted_list.items():
+        total = _get_dividend_total(dividend_list)
+        summary_list.append(DividendSummary(year_and_country, total))
+    return summary_list
 
-    @staticmethod
-    def get_dividend_total(
-        dividend_list: List[Dividend], transaction_type: DividendType
-    ) -> Decimal:
-        """get the sum of value in Sterling regardless of transaction type"""
-        return sum(
-            [
-                dividend.value.get_value()
-                for dividend in dividend_list
-                if dividend.transaction_type == transaction_type
-            ],
-            Decimal(0),
-        )
 
-    def show_dividend_by_country(self) -> str:
-        """To show dividend summary grouped by the companies' country"""
-        output_string = (
-            f"Dividends by country from {self.tax_year_start} to {self.tax_year_end}:\n"
-        )
-        for country, dividend_list in self.get_dividend_by_country().items():
-            dividend = self.get_dividend_total(dividend_list, DividendType.DIVIDEND)
-            dividend_in_lieu = self.get_dividend_total(
-                dividend_list, DividendType.DIVIDEND_IN_LIEU
-            )
-            total_dividend = dividend + dividend_in_lieu
-            withholding_tax = self.get_dividend_total(
-                dividend_list, DividendType.WITHHOLDING
-            )
-            net_income = total_dividend - withholding_tax
-            output_string += (
-                f"Dividends for {country}:\n"
-                f"Dividends: £{dividend:.2f}\n"
-                f"Dividends in lieu: £{dividend_in_lieu:.2f}\n"
-                f"Total Dividends: £{total_dividend:.2f}\n"
-                f"Foreign withholding tax: £{withholding_tax:.2f}\n"
-                f"Net income received: £{net_income:.2f}\n\n"
-            )
-        return output_string
+def _sort_dividend_list(
+    dividend_list: list[Dividend],
+) -> defaultdict[YearAndCountry, list[Dividend]]:
+    sorted_dividend_list: defaultdict[YearAndCountry, list[Dividend]] = defaultdict(
+        list
+    )
+    for dividend in dividend_list:
+        year = get_tax_year(dividend.transaction_date)
+        country = dividend.country
+        sorted_dividend_list[YearAndCountry(year, country)].append(dividend)
+    return sorted_dividend_list
+
+
+def _get_dividend_total(dividend_list: list[Dividend]) -> DividendTotal:
+    """get the sum of value in Sterling regardless of transaction type"""
+    total_dividend = sum(
+        [
+            dividend.value.get_value()
+            for dividend in dividend_list
+            if dividend.is_dividend()
+        ],
+        Decimal(0),
+    )
+    withholding_tax = sum(
+        [
+            dividend.value.get_value()
+            for dividend in dividend_list
+            if dividend.is_withholding_tax()
+        ],
+        Decimal(0),
+    )
+    net_income = total_dividend - withholding_tax
+    return DividendTotal(total_dividend, withholding_tax, net_income)
