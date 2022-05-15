@@ -130,7 +130,10 @@ def parse_dividend(file: str) -> list[Dividend]:
     tree = ET.parse(file)
     test = tree.findall(".//CashTransaction")
     dividend_list = [
-        x for x in test if x.attrib["type"] in [x.value for x in dividend_type]
+        x
+        for x in test
+        if x.attrib["type"] in [x.value for x in dividend_type]
+        and x.attrib["levelOfDetail"] == "DETAIL"
     ]
     return [transform_dividend(dividend) for dividend in dividend_list]
 
