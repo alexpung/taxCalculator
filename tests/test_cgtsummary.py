@@ -7,6 +7,7 @@ import unittest
 from capital_gain.calculator import CgtCalculator
 import capital_gain.capital_summary as summary
 from capital_gain.model import BuyTrade, Money, SellTrade
+from const import get_tax_year
 
 
 class TestCgtSummary(unittest.TestCase):
@@ -14,8 +15,6 @@ class TestCgtSummary(unittest.TestCase):
 
     def test_summary(self) -> None:
         """test the calculation of capital gain summary"""
-        tax_start_date = datetime.date(2021, 4, 6)
-        tax_end_date = datetime.date(2022, 4, 5)
         trades: Sequence[Union[BuyTrade, SellTrade]] = [
             BuyTrade(
                 "MMM",
@@ -55,38 +54,23 @@ class TestCgtSummary(unittest.TestCase):
         ]
         CgtCalculator(trades).calculate_tax()
         sell_list = [
-            sell_trade for sell_trade in trades if isinstance(sell_trade, SellTrade)
+            sell_trade
+            for sell_trade in trades
+            if isinstance(sell_trade, SellTrade)
+            and get_tax_year(sell_trade.transaction_date) == 2021
         ]
-        self.assertEqual(
-            3,
-            summary.get_number_of_disposal(sell_list, tax_start_date, tax_end_date),
-        )
+        self.assertEqual(3, summary.get_number_of_disposal(sell_list))
         # share cost = 15000 fee = 175, total allowable cost = 15175
-        self.assertEqual(
-            15175,
-            summary.get_allowable_cost(sell_list, tax_start_date, tax_end_date),
-        )
+        self.assertEqual(15175, summary.get_allowable_cost(sell_list))
         # (15000-10000-50-50) + (5000-10) - 3030
-        self.assertEqual(
-            6860,
-            summary.get_total_gain_exclude_loss(
-                sell_list, tax_start_date, tax_end_date
-            ),
-        )
+        self.assertEqual(6860, summary.get_total_gain_exclude_loss(sell_list))
         # 1500 - 2000 - 15 - 20
-        self.assertEqual(
-            -535, summary.get_capital_loss(sell_list, tax_start_date, tax_end_date)
-        )
+        self.assertEqual(-535, summary.get_capital_loss(sell_list))
         # 15000 + 5000 + 1500
-        self.assertEqual(
-            21500,
-            summary.get_disposal_proceeds(sell_list, tax_start_date, tax_end_date),
-        )
+        self.assertEqual(21500, summary.get_disposal_proceeds(sell_list))
 
     def test_date_range(self) -> None:
         """test that only date inside date range is calculated"""
-        tax_start_date = datetime.date(2021, 4, 6)
-        tax_end_date = datetime.date(2022, 4, 5)
         trades: list[Union[BuyTrade, SellTrade]] = [
             BuyTrade(
                 "MMM",
@@ -127,30 +111,17 @@ class TestCgtSummary(unittest.TestCase):
         # put trades with the same symbol together and calculate tax
         CgtCalculator(trades).calculate_tax()
         sell_list = [
-            sell_trade for sell_trade in trades if isinstance(sell_trade, SellTrade)
+            sell_trade
+            for sell_trade in trades
+            if isinstance(sell_trade, SellTrade)
+            and get_tax_year(sell_trade.transaction_date) == 2021
         ]
-        self.assertEqual(
-            1,
-            summary.get_number_of_disposal(sell_list, tax_start_date, tax_end_date),
-        )
+        self.assertEqual(1, summary.get_number_of_disposal(sell_list))
         # share cost = 13000 fee = 140, total allowable cost = 13140
-        self.assertEqual(
-            15100,
-            summary.get_allowable_cost(sell_list, tax_start_date, tax_end_date),
-        )
+        self.assertEqual(15100, summary.get_allowable_cost(sell_list))
         # (15000-10000-50-50) + (5000-10) - 3030
-        self.assertEqual(
-            1000,
-            summary.get_total_gain_exclude_loss(
-                sell_list, tax_start_date, tax_end_date
-            ),
-        )
+        self.assertEqual(1000, summary.get_total_gain_exclude_loss(sell_list))
         # the disposal with capital loss is outside tax date range, so 0
-        self.assertEqual(
-            0, summary.get_capital_loss(sell_list, tax_start_date, tax_end_date)
-        )
+        self.assertEqual(0, summary.get_capital_loss(sell_list))
         # 15000 + 5000 (1500 is outside date range)
-        self.assertEqual(
-            16100,
-            summary.get_disposal_proceeds(sell_list, tax_start_date, tax_end_date),
-        )
+        self.assertEqual(16100, summary.get_disposal_proceeds(sell_list))
