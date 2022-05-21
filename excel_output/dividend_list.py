@@ -19,15 +19,15 @@ def write_dividend_list(
     summaries.sort(key=lambda x: x.year_and_country.tax_year)
     dividend_list = [x for x in dividend_and_tax_list if x.is_dividend()]
     withholding_list = [x for x in dividend_and_tax_list if x.is_withholding_tax()]
-    make_table(workbook, "Dividend List", map(set_dividend_data, dividend_list))
+    make_table(workbook, "Dividend List", map(_set_dividend_data, dividend_list))
     make_table(
-        workbook, "Withholding Tax List", map(set_dividend_data, withholding_list)
+        workbook, "Withholding Tax List", map(_set_dividend_data, withholding_list)
     )
-    make_table(workbook, "Dividend Summary", map(set_dividend_summary, summaries))
+    make_table(workbook, "Dividend Summary", map(_set_dividend_summary, summaries))
     workbook.close()
 
 
-def set_dividend_data(dividend_entry: Dividend) -> dict[str, Any]:
+def _set_dividend_data(dividend_entry: Dividend) -> dict[str, Any]:
     """Heading for the dividend data table and the content"""
     return {
         "Date": dividend_entry.transaction_date,
@@ -40,7 +40,7 @@ def set_dividend_data(dividend_entry: Dividend) -> dict[str, Any]:
     }
 
 
-def set_dividend_summary(dividend_summary: DividendSummary):
+def _set_dividend_summary(dividend_summary: DividendSummary) -> dict[str, Any]:
     """Heading for the dividend summary table and the content"""
     return {
         "Tax Year": dividend_summary.year_and_country.tax_year,
