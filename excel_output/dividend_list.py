@@ -1,11 +1,11 @@
 """Methods for writing dividend data and summaries to excel"""
-
+from typing import Any
 
 import xlsxwriter
-from xlsxwriter import Workbook
 
 from capital_gain.dividend_summary import DividendSummary
 from capital_gain.model import Dividend
+from excel_output.utility import make_table
 
 
 def write_dividend_list(
@@ -19,41 +19,33 @@ def write_dividend_list(
     summaries.sort(key=lambda x: x.year_and_country.tax_year)
     dividend_list = [x for x in dividend_and_tax_list if x.is_dividend()]
     withholding_list = [x for x in dividend_and_tax_list if x.is_withholding_tax()]
-    make_dividend_sheet(workbook, dividend_list, "Dividend List")
-    make_dividend_sheet(workbook, withholding_list, "Withholding Tax List")
-    make_dividend_summary_sheet(workbook, summaries)
+    make_table(workbook, "Dividend List", map(set_dividend_data, dividend_list))
+    make_table(
+        workbook, "Withholding Tax List", map(set_dividend_data, withholding_list)
+    )
+    make_table(workbook, "Dividend Summary", map(set_dividend_summary, summaries))
     workbook.close()
 
 
-def make_dividend_sheet(
-    workbook: Workbook, transaction_list: list[Dividend], sheet_name: str
-):
-    """Set up table and write dividend or withholding tax data"""
-    worksheet = workbook.add_worksheet(sheet_name)
-    for row_num, dividend in enumerate(transaction_list):
-        table_column = {
-            "Date": dividend.transaction_date,
-            "Ticker": dividend.ticker,
-            "Description": dividend.description,
-            "Currency": dividend.value.currency.value,
-            "Value in local currency": dividend.value.value,
-            "Value in Sterling": dividend.value.get_value(),
-            "Exchange rate": dividend.value.exchange_rate,
-        }
-        worksheet.write_row(0, 0, table_column)
-        worksheet.write_row(row_num + 1, 0, table_column.values())
+def set_dividend_data(dividend_entry: Dividend) -> dict[str, Any]:
+    """Heading for the dividend data table and the content"""
+    return {
+        "Date": dividend_entry.transaction_date,
+        "Ticker": dividend_entry.ticker,
+        "Description": dividend_entry.description,
+        "Currency": dividend_entry.value.currency.value,
+        "Value in local currency": dividend_entry.value.value,
+        "Value in Sterling": dividend_entry.value.get_value(),
+        "Exchange rate": dividend_entry.value.exchange_rate,
+    }
 
 
-def make_dividend_summary_sheet(workbook: Workbook, summaries: list[DividendSummary]):
-    """Set up table and write dividend summary data"""
-    worksheet = workbook.add_worksheet("Dividend Summary")
-    for row_num, dividend_summary in enumerate(summaries):
-        table_column = {
-            "Tax Year": dividend_summary.year_and_country.tax_year,
-            "Country": dividend_summary.year_and_country.country,
-            "Gross Dividend": dividend_summary.dividend_summary.total_dividend,
-            "Withholding Tax Paid": dividend_summary.dividend_summary.withholding_tax,
-            "Net Dividend": dividend_summary.dividend_summary.net_income,
-        }
-        worksheet.write_row(0, 0, table_column)
-        worksheet.write_row(row_num + 1, 0, table_column.values())
+def set_dividend_summary(dividend_summary: DividendSummary):
+    """Heading for the dividend summary table and the content"""
+    return {
+        "Tax Year": dividend_summary.year_and_country.tax_year,
+        "Country": dividend_summary.year_and_country.country,
+        "Gross Dividend": dividend_summary.dividend_summary.total_dividend,
+        "Withholding Tax Paid": dividend_summary.dividend_summary.withholding_tax,
+        "Net Dividend": dividend_summary.dividend_summary.net_income,
+    }
