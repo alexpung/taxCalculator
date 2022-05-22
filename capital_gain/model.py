@@ -53,18 +53,6 @@ class Money:
         """return transaction value in GBP"""
         return self.value * self.exchange_rate
 
-    def __str__(self) -> str:
-        prefix = f"{self.note}: " if self.note else ""
-        fx_suffix = (
-            (
-                f" with exchange rate {self.exchange_rate} "
-                f"converted to £{self.get_value():.2f}"
-            )
-            if self.currency != Currency("GBP")
-            else ""
-        )
-        return prefix + f"{self.currency.code}{self.value:.2f}" + fx_suffix + "\n"
-
 
 @dataclass
 class CalculationStatus:
@@ -169,15 +157,6 @@ class ShareReorg(Transaction):
         """discard old calculation and start anew"""
         self.comment = ""
 
-    def __str__(self):
-        return (
-            f"Symbol: {self.ticker}\n"
-            f"Trade Date: {self.transaction_date.strftime('%d %b %Y')}\n"
-            f"Transaction Type: {self.transaction_type.value}\n"
-            f"Description: {self.description}\n"
-            f"\n{self.comment}"
-        )
-
     def match_with_section104(self, section_104: Section104) -> None:
         """Changing section 104 pool due to share split/merge"""
         old_qty = section_104.get_qty(self.ticker)
@@ -252,31 +231,6 @@ class Trade(Transaction, ABC):
         """Return a negative value as a loss if this trade incur capital loss"""
         loss = self.calculation_status.total_gain
         return loss if loss <= 0 else 0
-
-    def __str__(self) -> str:
-        fee_string = ""
-        for fee in self.fee_and_tax:
-            fee_string += str(fee)
-        short_share = (
-            f"Short shares that are unmatched: {self.calculation_status.unmatched}\n"
-            if self.calculation_status.unmatched
-            else ""
-        )
-
-        return (
-            f"Symbol: {self.ticker}\n"
-            f"Trade Date: {self.transaction_date.strftime('%d %b %Y')}\n"
-            f"Transaction Type: {self.transaction_type}\n"
-            f"Quantity: {self.size:2f}\n"
-            f"Gross trade value: "
-            f"£{self.transaction_value.get_value():2f}"
-            f"\nTotal incidental cost: "
-            f"£{sum(fee.get_value() for fee in self.fee_and_tax):.2f}\n"
-            f"{fee_string}"
-            f"{short_share}"
-            f"Total capital gain (loss): £{self.calculation_status.total_gain:.2f}\n"
-            f"\n{self.calculation_status.comment}"
-        )
 
 
 @dataclass

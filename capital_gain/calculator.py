@@ -1,4 +1,4 @@
-""" contain capital gain calculation """
+""" contain capital gain calculation for UK tax rules"""
 from __future__ import annotations
 
 from collections import defaultdict
