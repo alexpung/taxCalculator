@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections import defaultdict
 from copy import deepcopy
 from fractions import Fraction
-from typing import DefaultDict, Optional, Sequence, Union
+from typing import DefaultDict, Optional, Sequence
 
 from .model import BuyTrade, MatchType, Section104, SellTrade, ShareReorg, Trade
 
@@ -20,12 +20,12 @@ class CgtCalculator:
 
     def __init__(
         self,
-        transaction_list: Sequence[Union[BuyTrade, SellTrade]],
+        transaction_list: Sequence[BuyTrade | SellTrade],
         corp_action_list: Optional[Sequence[ShareReorg]] = None,
         init_section104: Optional[Section104] = None,
     ) -> None:
         self.ticker_transaction_list: DefaultDict[
-            str, list[Union[BuyTrade, SellTrade]]
+            str, list[BuyTrade | SellTrade]
         ] = defaultdict(list)
         self.ticker_corp_action_list: DefaultDict[str, list[ShareReorg]] = defaultdict(
             list
@@ -171,7 +171,7 @@ class CgtCalculator:
     def match_section104(self) -> None:
         """To handle section 104 share matching"""
         for ticker, trade_list in self.ticker_transaction_list.items():
-            merged_list: list[Union[Trade, ShareReorg]] = [
+            merged_list: list[Trade | ShareReorg] = [
                 *trade_list,
                 *self.ticker_corp_action_list[ticker],
             ]

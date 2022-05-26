@@ -4,7 +4,7 @@ from decimal import Decimal
 from fractions import Fraction
 import logging
 import re
-from typing import Any, Dict, Union
+from typing import Any, Dict
 import xml.etree.ElementTree as ET
 
 from iso3166 import countries
@@ -60,7 +60,7 @@ def transform_dividend(xml_entry: ET.Element) -> Dividend:
     )
 
 
-def transform_trade(xml_entry: ET.Element) -> Union[BuyTrade, SellTrade]:
+def transform_trade(xml_entry: ET.Element) -> BuyTrade | SellTrade:
     """parse trade transaction to Trade objects
     # adjust the sign of the price when buying
     # note: Using abs() does not work as it is possible to buy/sell at negative price
@@ -138,7 +138,7 @@ def parse_dividend(file: str) -> list[Dividend]:
     return [transform_dividend(dividend) for dividend in dividend_list]
 
 
-def parse_trade(file: str) -> list[Union[BuyTrade, SellTrade]]:
+def parse_trade(file: str) -> list[BuyTrade | SellTrade]:
     """Parse xml to extract Trade objects"""
     tree = ET.parse(file)
     test = tree.findall(".//Trades/Order")
@@ -217,7 +217,7 @@ def fetch_fx_rate(
 
 def transform_fx_line(
     xml_entry: ET.Element, tree: ET.ElementTree, base_currency: str = "GBP"
-) -> Union[BuyTrade, SellTrade, None]:
+) -> BuyTrade | SellTrade | None:
     """To transform xml line to trade objects.
     Return None if no fx activity in the line"""
     currency = xml_entry.attrib["currency"]
@@ -249,7 +249,7 @@ def transform_fx_line(
         return SellTrade(currency, date, quantity, value, description=description)
 
 
-def parse_fx_acquisition_and_disposal(file: str) -> list[Union[BuyTrade, SellTrade]]:
+def parse_fx_acquisition_and_disposal(file: str) -> list[BuyTrade | SellTrade]:
     """Parse xml to extract acquisition and disposal of foreign currency"""
     tree = ET.parse(file)
     raw_result = tree.findall(".//StmtFunds/StatementOfFundsLine")

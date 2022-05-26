@@ -1,6 +1,6 @@
 """ To calculate summary of capital gain """
 from decimal import Decimal
-from typing import Sequence, Union
+from typing import Sequence
 
 from capital_gain.model import SellTrade
 
@@ -15,12 +15,12 @@ def get_number_of_disposal(trades: Sequence[SellTrade]) -> int:
     return len(count)
 
 
-def get_disposal_proceeds(trades: Sequence[SellTrade]) -> Union[Decimal, int]:
+def get_disposal_proceeds(trades: Sequence[SellTrade]) -> Decimal | int:
     """return the gross total disposal proceeds for the duration specified"""
     return sum([trade.get_disposal_proceeds() for trade in trades], Decimal(0))
 
 
-def get_allowable_cost(trades: Sequence[SellTrade]) -> Union[Decimal, int]:
+def get_allowable_cost(trades: Sequence[SellTrade]) -> Decimal | int:
     """return the total allowable cost for the duration specified"""
     return sum(
         [trade.calculation_status.allowable_cost for trade in trades], Decimal(0)
@@ -32,6 +32,6 @@ def get_total_gain_exclude_loss(trades: Sequence[SellTrade]) -> Decimal:
     return sum([trade.get_total_gain_exclude_loss() for trade in trades], Decimal(0))
 
 
-def get_capital_loss(trades: Sequence[SellTrade]) -> Union[Decimal, int]:
+def get_capital_loss(trades: Sequence[SellTrade]) -> Decimal | int:
     """return total capital loss for the duration specified"""
     return sum([trade.get_capital_loss() for trade in trades])

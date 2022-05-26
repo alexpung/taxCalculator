@@ -5,7 +5,6 @@ import logging
 import time
 import urllib.parse
 import urllib.request
-from typing import Union
 from xml.etree import ElementTree
 
 from xml_import.exception import RequestRejectedError, RequestTimeoutError
@@ -23,9 +22,7 @@ BASE_URL = (
 )
 
 
-def find_text(
-    root: Union[ElementTree.ElementTree, ElementTree.Element], target: str
-) -> str:
+def find_text(root: ElementTree.ElementTree | ElementTree.Element, target: str) -> str:
     """Helper function to handle case when the search return None"""
     result = root.find(target)
     if result is not None:

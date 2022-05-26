@@ -1,7 +1,7 @@
 """ testing for capital gain summary """
 import datetime
 from decimal import Decimal
-from typing import Sequence, Union
+from typing import Sequence
 import unittest
 
 from capital_gain.calculator import CgtCalculator
@@ -15,7 +15,7 @@ class TestCgtSummary(unittest.TestCase):
 
     def test_summary(self) -> None:
         """test the calculation of capital gain summary"""
-        trades: Sequence[Union[BuyTrade, SellTrade]] = [
+        trades: Sequence[BuyTrade | SellTrade] = [
             BuyTrade(
                 "MMM",
                 datetime.date(2021, 10, 5),
@@ -71,7 +71,7 @@ class TestCgtSummary(unittest.TestCase):
 
     def test_date_range(self) -> None:
         """test that only date inside date range is calculated"""
-        trades: list[Union[BuyTrade, SellTrade]] = [
+        trades: list[BuyTrade | SellTrade] = [
             BuyTrade(
                 "MMM",
                 datetime.date(2021, 10, 5),
