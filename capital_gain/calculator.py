@@ -45,9 +45,9 @@ class CgtCalculator:
     def calculate_tax(self) -> Section104:
         """To calculate chargeable gain and
         allowable loss of a list of same kind of shares"""
-        self.match_same_day_disposal()
-        self.match_bed_and_breakfast_disposal()
-        self.match_section104()
+        self._match_same_day_disposal()
+        self._match_bed_and_breakfast_disposal()
+        self._match_section104()
         return self.section104
 
     def _match(
@@ -64,7 +64,7 @@ class CgtCalculator:
         e.g. for a stock split 3-to-2, the ratio should be set to Fraction (3, 2)
         if it happens between the matching buy and sell trade
         """
-        ratio = self.check_share_split(buy_transaction, sell_transaction)
+        ratio = self._check_share_split(buy_transaction, sell_transaction)
         if buy_transaction.transaction_date > sell_transaction.transaction_date:
             to_match = min(
                 sell_transaction.calculation_status.unmatched
@@ -105,7 +105,7 @@ class CgtCalculator:
         )
         sell_transaction.capital_gain_calc(to_match_sell, buy_cost, trade_cost_buy)
 
-    def match_same_day_disposal(self) -> None:
+    def _match_same_day_disposal(self) -> None:
         """To match buy and sell transactions that occur in the same day"""
         for _, trade_list in self.ticker_transaction_list.items():
             for sell_transaction in [x for x in trade_list if isinstance(x, SellTrade)]:
@@ -118,7 +118,7 @@ class CgtCalculator:
                 for buy_transaction in matched_transactions_list:
                     self._match(buy_transaction, sell_transaction, MatchType.SAME_DAY)
 
-    def check_share_split(self, trade1: Trade, trade2: Trade) -> Fraction:
+    def _check_share_split(self, trade1: Trade, trade2: Trade) -> Fraction:
         """For bed and breakfast matching, share split needs to be checked
         trade1 and trade2 are the two trade to be matched
         """
@@ -141,7 +141,7 @@ class CgtCalculator:
             ratio = ratio * split_action.ratio
         return ratio
 
-    def match_bed_and_breakfast_disposal(self) -> None:
+    def _match_bed_and_breakfast_disposal(self) -> None:
         """To match buy transactions that occur within 30 days of a sell transaction"""
         for _, trade_list in self.ticker_transaction_list.items():
             for sell_transaction in [x for x in trade_list if isinstance(x, SellTrade)]:
@@ -158,7 +158,7 @@ class CgtCalculator:
                         buy_transaction, sell_transaction, MatchType.BED_AND_BREAKFAST
                     )
 
-    def check_cover_short(self, buy_transaction: BuyTrade):
+    def _check_cover_short(self, buy_transaction: BuyTrade):
         """Check and match when there is selling short then buy to cover"""
         unclosed_short_list = self.section104.short_list
         unclosed_short_list.sort()
@@ -168,7 +168,7 @@ class CgtCalculator:
             if short_transaction.get_unmatched_share() == 0:
                 self.section104.short_list.remove(short_transaction)
 
-    def match_section104(self) -> None:
+    def _match_section104(self) -> None:
         """To handle section 104 share matching"""
         for ticker, trade_list in self.ticker_transaction_list.items():
             merged_list: list[Trade | ShareReorg] = [
@@ -181,7 +181,7 @@ class CgtCalculator:
                 # before putting a buy trade to section104 we have to check
                 # if this stock is shorted and have to match with the short sell trade
                 if isinstance(transaction, BuyTrade):
-                    self.check_cover_short(transaction)
+                    self._check_cover_short(transaction)
                 transaction.match_with_section104(self.section104)
 
     def get_section104(self):

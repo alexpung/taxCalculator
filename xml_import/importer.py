@@ -22,7 +22,7 @@ BASE_URL = (
 )
 
 
-def find_text(root: ElementTree.ElementTree | ElementTree.Element, target: str) -> str:
+def _find_text(root: ElementTree.ElementTree | ElementTree.Element, target: str) -> str:
     """Helper function to handle case when the search return None"""
     result = root.find(target)
     if result is not None:
@@ -41,13 +41,13 @@ def _make_xml_request(
     full_url = BASE_URL + "?" + url_values
     with urllib.request.urlopen(full_url) as xml_request_response:
         root = ElementTree.fromstring(xml_request_response.read())
-        status = find_text(root, "Status")
+        status = _find_text(root, "Status")
         logger.info("XML request Status: %s", status)
         if status == "Success":
             return root
         else:
-            error_code = find_text(root, "ErrorCode")
-            error_message = find_text(root, "ErrorMessage")
+            error_code = _find_text(root, "ErrorCode")
+            error_message = _find_text(root, "ErrorMessage")
             raise RequestRejectedError(error_code, error_message)
 
 
@@ -71,13 +71,13 @@ def _get_xml(
                 logger.info("XML download is successful.")
                 return root
             elif (
-                find_text(root, "ErrorCode") == "1019"
+                _find_text(root, "ErrorCode") == "1019"
             ):  # statement generation in process, retry later
                 logger.info("XML is not yet ready.")
                 retry += 1
             else:
-                error_code = find_text(root, "ErrorCode")
-                error_message = find_text(root, "ErrorMessage")
+                error_code = _find_text(root, "ErrorCode")
+                error_message = _find_text(root, "ErrorMessage")
                 raise RequestRejectedError(error_code, error_message)
     raise RequestTimeoutError()
 
@@ -94,8 +94,8 @@ def download_xml(token: str, report_number: str, filename: str = "data.xml") -> 
     """
     xml_reply = _make_xml_request(token, report_number, REQUEST_VERSION)
     xml_result = _get_xml(
-        find_text(xml_reply, "Url"),
-        find_text(xml_reply, "ReferenceCode"),
+        _find_text(xml_reply, "Url"),
+        _find_text(xml_reply, "ReferenceCode"),
         token,
         XML_VERSION,
     )

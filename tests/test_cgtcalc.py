@@ -133,7 +133,7 @@ class TestCalculator(unittest.TestCase):
             ),
         ]
         test = CgtCalculator(trades)
-        test.match_bed_and_breakfast_disposal()
+        test.calculate_tax()
         self.assertEqual(trades[1].get_total_gain_exclude_loss(), 800)
         self.assertEqual(trades[4].get_total_gain_exclude_loss(), 400)
 

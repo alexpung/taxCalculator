@@ -21,7 +21,7 @@ from capital_gain.model import (
 )
 
 
-def get_country_code(xml_entry: ET.Element) -> str:
+def _get_country_code(xml_entry: ET.Element) -> str:
     """extract the first two letter of isin as country code
     and covert it to alpha 3 format
 
@@ -40,7 +40,7 @@ def get_country_code(xml_entry: ET.Element) -> str:
     return country
 
 
-def transform_dividend(xml_entry: ET.Element) -> Dividend:
+def _transform_dividend(xml_entry: ET.Element) -> Dividend:
     """parse cash transaction entries to Dividend objects"""
     dividend_value = Money(
         Decimal(xml_entry.attrib["amount"]),
@@ -55,12 +55,12 @@ def transform_dividend(xml_entry: ET.Element) -> Dividend:
         datetime.strptime(xml_entry.attrib["reportDate"], "%d-%b-%y").date(),
         DividendType(xml_entry.attrib["type"]),
         dividend_value,
-        get_country_code(xml_entry),
+        _get_country_code(xml_entry),
         description=str(xml_entry.attrib["description"]),
     )
 
 
-def transform_trade(xml_entry: ET.Element) -> BuyTrade | SellTrade:
+def _transform_trade(xml_entry: ET.Element) -> BuyTrade | SellTrade:
     """parse trade transaction to Trade objects
     # adjust the sign of the price when buying
     # note: Using abs() does not work as it is possible to buy/sell at negative price
@@ -135,7 +135,7 @@ def parse_dividend(file: str) -> list[Dividend]:
         if x.attrib["type"] in [x.value for x in dividend_type]
         and x.attrib["levelOfDetail"] == "DETAIL"
     ]
-    return [transform_dividend(dividend) for dividend in dividend_list]
+    return [_transform_dividend(dividend) for dividend in dividend_list]
 
 
 def parse_trade(file: str) -> list[BuyTrade | SellTrade]:
@@ -143,10 +143,10 @@ def parse_trade(file: str) -> list[BuyTrade | SellTrade]:
     tree = ET.parse(file)
     test = tree.findall(".//Trades/Order")
     trade_list = [x for x in test if x.attrib["assetCategory"] == "STK"]
-    return [transform_trade(trade) for trade in trade_list]
+    return [_transform_trade(trade) for trade in trade_list]
 
 
-def transform_corp_action(xml_entry: ET.Element) -> ShareReorg:
+def _transform_corp_action(xml_entry: ET.Element) -> ShareReorg:
     """Parse corporation entries to ShareReorg objects, currently only split and
     reverse split is supported"""
     if xml_entry.attrib["type"] == "FS":
@@ -179,10 +179,10 @@ def parse_corp_action(file: str) -> list[ShareReorg]:
     tree = ET.parse(file)
     test = tree.findall(".//CorporateActions/CorporateAction")
     action_list = [x for x in test if x.attrib["type"] in supported_type]
-    return [transform_corp_action(action) for action in action_list]
+    return [_transform_corp_action(action) for action in action_list]
 
 
-def fetch_fx_rate(
+def _fetch_fx_rate(
     tree: ET.ElementTree, currency: str, base_currency: str, date: str
 ) -> Decimal:
     """To get IB provided FX rate from the XML file given currency and date.
@@ -215,7 +215,7 @@ def fetch_fx_rate(
     return result
 
 
-def transform_fx_line(
+def _transform_fx_line(
     xml_entry: ET.Element, tree: ET.ElementTree, base_currency: str = "GBP"
 ) -> BuyTrade | SellTrade | None:
     """To transform xml line to trade objects.
@@ -241,7 +241,7 @@ def transform_fx_line(
         if xml_entry.attrib["debit"]
         else Decimal(xml_entry.attrib["credit"])
     )
-    fx_rate = fetch_fx_rate(tree, currency, base_currency, raw_date)
+    fx_rate = _fetch_fx_rate(tree, currency, base_currency, raw_date)
     value = Money(quantity * fx_rate)
     if xml_entry.attrib["credit"]:
         return BuyTrade(currency, date, quantity, value, description=description)
@@ -255,6 +255,6 @@ def parse_fx_acquisition_and_disposal(file: str) -> list[BuyTrade | SellTrade]:
     raw_result = tree.findall(".//StmtFunds/StatementOfFundsLine")
     return [
         x
-        for x in [transform_fx_line(line, tree) for line in raw_result]
+        for x in [_transform_fx_line(line, tree) for line in raw_result]
         if x is not None
     ]
