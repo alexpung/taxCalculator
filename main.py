@@ -21,7 +21,7 @@ from statement_parser.ibkr import (
 )
 
 
-class TaxCalculator:
+class UKTaxCalculator:
     """Command line application for tax calculator"""
 
     def __init__(self) -> None:
@@ -31,6 +31,8 @@ class TaxCalculator:
         self.dividend_list: list[Dividend] = []
         self.read_section104_from_toml()
         self.load_files(self.select_directory())
+        # Acquisitions and disposals of GBP is not taxable, so including it is redundant
+        self.trades_list = [x for x in self.trades_list if x.ticker != "GBP"]
         self.calculate()
 
         write_dividend_list(
@@ -87,4 +89,4 @@ class TaxCalculator:
 
 
 if __name__ == "__main__":
-    TaxCalculator()
+    UKTaxCalculator()
