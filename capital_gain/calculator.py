@@ -31,7 +31,6 @@ class CgtCalculator:
             list
         )
         for trade in transaction_list:
-            trade.clear_calculation()
             self.ticker_transaction_list[trade.ticker].append(trade)
         if corp_action_list:
             for corp_action in corp_action_list:
@@ -42,13 +41,12 @@ class CgtCalculator:
         else:
             self.section104 = Section104()
 
-    def calculate_tax(self) -> Section104:
+    def calculate_tax(self) -> None:
         """To calculate chargeable gain and
         allowable loss of a list of same kind of shares"""
         self._match_same_day_disposal()
         self._match_bed_and_breakfast_disposal()
         self._match_section104()
-        return self.section104
 
     def _match(
         self,

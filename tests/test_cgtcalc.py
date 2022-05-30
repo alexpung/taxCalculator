@@ -246,7 +246,8 @@ class TestCalculator(unittest.TestCase):
             ),
         ]
         test = CgtCalculator(trades, share_reorg)
-        section104 = test.calculate_tax()
+        test.calculate_tax()
+        section104 = test.get_section104()
         self.assertAlmostEqual(
             Decimal("1833.3333333"), trades[1].calculation_status.total_gain
         )
@@ -288,7 +289,8 @@ class TestCalculator(unittest.TestCase):
             ),
         ]
         test = CgtCalculator(trades, share_reorg)
-        section104 = test.calculate_tax()
+        test.calculate_tax()
+        section104 = test.get_section104()
         self.assertEqual(10800, trades[1].calculation_status.total_gain)
         self.assertEqual(600, section104.get_qty("Lobster plc"))
         self.assertEqual(1200, section104.get_cost("Lobster plc"))
