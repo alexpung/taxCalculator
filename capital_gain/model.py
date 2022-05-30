@@ -62,6 +62,8 @@ class CalculationStatus:
     comment: str = ""
     total_gain: Decimal = Decimal(0)
     allowable_cost: Decimal = Decimal(0)
+    section104_pre_trade: Decimal = Decimal(0)
+    section104_post_trade: Decimal = Decimal(0)
 
     def reset_calculation(self, size: Decimal):
         """clear the calculation and reset unmatched size"""
@@ -250,6 +252,8 @@ class BuyTrade(Trade):
         old_cost = section_104.get_cost(self.ticker)
         section_104.add_to_section104(self.ticker, remaining_shares, total_cost)
         self.calculation_status.unmatched = Decimal(0)
+        self.calculation_status.section104_pre_trade = old_qty
+        self.calculation_status.section104_post_trade = section_104.get_qty(self.ticker)
         self.calculation_status.comment += (
             f"{remaining_shares:2f} share(s) added to Section104 pool "
             f"with allowable cost £{total_cost:.2f} "
@@ -274,8 +278,10 @@ class SellTrade(Trade):
     def match_with_section104(self, section_104: Section104) -> None:
         """Matching a disposal with section104 pool"""
         matched_qty = min(self.get_unmatched_share(), section_104.get_qty(self.ticker))
+        self.calculation_status.section104_pre_trade = section_104.get_qty(self.ticker)
         buy_cost = section_104.remove_from_section104(self.ticker, matched_qty)
         self.calculation_status.match(matched_qty)
+        self.calculation_status.section104_post_trade = section_104.get_qty(self.ticker)
         # if section 104 is not enough to match all sell shares, it is sell short
         if self.calculation_status.unmatched > 0:
             section_104.short_list.append(self)

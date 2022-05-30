@@ -119,6 +119,12 @@ def _set_trade_data(transaction: Transaction) -> dict[str, Any]:
             ),
             "Unmatched shares": transaction.calculation_status.unmatched,
             "Total capital gain (loss)": transaction.calculation_status.total_gain,
+            "Section104 size before trade": (
+                transaction.calculation_status.section104_pre_trade
+            ),
+            "Section104 size after trade": (
+                transaction.calculation_status.section104_post_trade
+            ),
             "Comment": transaction.calculation_status.comment,
         }
     elif isinstance(transaction, ShareReorg):
