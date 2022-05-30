@@ -1,4 +1,5 @@
 """Main executable file for the project"""
+from decimal import Decimal
 from glob import glob
 from tkinter import Tk, filedialog
 
@@ -51,7 +52,9 @@ class UKTaxCalculator:
                 if isinstance(section104, AoT):
                     for entry in section104.value:
                         self.section104.add_to_section104(
-                            entry["symbol"], entry["quantity"], entry["value"]
+                            entry["symbol"],
+                            Decimal(entry["quantity"]),
+                            Decimal(entry["value"]),
                         )
                 else:
                     exception.toml_heading_incorrect()
