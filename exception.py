@@ -1,7 +1,7 @@
 """Error handling code"""
 
 
-def section_104_init_not_found():
+def setting_file_not_found():
     """handling when no init file for section 104"""
     print(
         "Section104 initialization file (init.toml) not found, "
@@ -9,15 +9,16 @@ def section_104_init_not_found():
     )
 
 
-def section104_key_incorrect_or_not_found():
+def section104_incorrect():
     """Handling when section104 key is incorrect or not found"""
     print(
-        "Key for section 104 not found/incorrect, "
+        "Format for section 104 not found/incorrect, "
         "heading should be [['Section104']], "
         "keys are 'symbol', 'quantity', 'value'"
+        "pool will be calculated only from trade"
     )
 
 
-def toml_heading_incorrect():
-    """Handling when toml heading is not correct"""
-    raise ImportError("Heading incorrect: " "heading should be '[[Section104]]'")
+def setting_not_found():
+    """Handling when setting config is incorrect or not found"""
+    print("Configuration not found, will use default setting")
