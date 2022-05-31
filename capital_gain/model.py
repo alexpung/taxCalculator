@@ -244,8 +244,6 @@ class BuyTrade(Trade):
     def match_with_section104(self, section_104: Section104) -> None:
         """Add all remaining shares to section 104"""
         remaining_shares = self.get_unmatched_share()
-        if remaining_shares == 0:
-            return
         fee_cost = self.get_partial_fee(remaining_shares)
         total_cost = self.get_partial_value(remaining_shares) + fee_cost
         old_qty = section_104.get_qty(self.ticker)
@@ -254,15 +252,18 @@ class BuyTrade(Trade):
         self.calculation_status.unmatched = Decimal(0)
         self.calculation_status.section104_pre_trade = old_qty
         self.calculation_status.section104_post_trade = section_104.get_qty(self.ticker)
-        self.calculation_status.comment += (
-            f"{remaining_shares:2f} share(s) added to Section104 pool "
-            f"with allowable cost £{total_cost:.2f} "
-            f"including dealing cost £{fee_cost:.2f}.\n"
-            f"Total number of share(s) for section 104 "
-            f"changes from {old_qty:2f} to {section_104.get_qty(self.ticker):2f}.\n"
-            f"Total allowable cost change from £{old_cost:.2f} to "
-            f"£{section_104.get_cost(self.ticker):.2f}\n\n"
-        )
+        if remaining_shares == 0:
+            return
+        else:
+            self.calculation_status.comment += (
+                f"{remaining_shares:2f} share(s) added to Section104 pool "
+                f"with allowable cost £{total_cost:.2f} "
+                f"including dealing cost £{fee_cost:.2f}.\n"
+                f"Total number of share(s) for section 104 "
+                f"changes from {old_qty:2f} to {section_104.get_qty(self.ticker):2f}.\n"
+                f"Total allowable cost change from £{old_cost:.2f} to "
+                f"£{section_104.get_cost(self.ticker):.2f}\n\n"
+            )
 
 
 @dataclass
