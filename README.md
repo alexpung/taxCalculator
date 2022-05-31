@@ -18,10 +18,13 @@ To help report UK tax for dividend and capital gain.
 2. Parse Interactive Brokers dividend/dividend in lieu/Witholding tax and shows dividend by country and total income for the tax year specified
 3. Show section 104 holdings and sell that are unmatched with a buy (i.e. short sale)
 4. Allow user to specify the initial section 104 pool (in case old trades cannot be found) (\gui\init.toml)
-5. Dividend and withholding tax list and summary in excel
-   TBD: Capital gain report in excel
+5. Allow user to specify period to report. In this case trade and dividends of that period will be listed.
+6. Can enable or disable fx acquisition and disposal reporting.
+7. Dividend and withholding tax list and summary by each country of origin in Excel
+8. Capital gain report in Excel, list trade by Symbol and by tax year. With tax summary by year to help fill out the tax form.
 
-This project use Poetry to manage dependency. Or you can install the dependency yourself by looking at [tool.poetry.dependencies] at pyproject.toml
+This project use Poetry to manage dependency. Or you can install the dependency yourself by looking at [tool.poetry.dependencies] in pyproject.toml
+
 To set up:
 
 1. pip install --user poetry
@@ -29,10 +32,22 @@ To set up:
 
 # To use:
 
-1. Put your xml statements (option required: statement of fund, CashTransactions, corporate actions, Trades with detail level: order)
-2. execute main.py
-3. A folder selector will pop up, select the folder where your statement is located.
-4. Excel reports will be generated in the same folder.
+1. Configure flex query from interactive brokers. Following report required. Date format dd-MMM-yy
+   1. Cash Transactions
+   2. Corporate Actions
+   3. Financial Instrument Information
+   4. Statement of Funds - Options: Summarize Trades by Symbol (buy/sell) and Report Date, Currency Breakout
+   5. Trades - Options: Orders
+2. Download the flex query for each year in xml format using web browser or the xml downloader in this repository
+3. (Optional) Create an init.toml file with settings and initial section104 pool. Sample is shown in the init_sample.toml file.
+4. Put your xml statements in the same folder
+5. execute main.py
+6. A folder selector will pop up, select the folder where your statement is located.
+7. Excel reports will be generated in the same folder.
+   1. Dividend.xlsx - List of collected dividends
+   2. Section104.xlsx - State of Section104 after all the trades in the statements
+   3. TradesByTicker.xlsx - List the trades by Stock/Currency Symbol
+   4. CgtPerYearAndSummary - List trades by tax year and also shows tax summary for each year
 
 # Design notes:
 

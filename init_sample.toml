@@ -8,7 +8,7 @@ symbol = "JPY"
 quantity = 1600000
 value = 10000
 
-[Setting]
+[Settings]
 reporting_period_start = "20-NOV-2019"
 reporting_period_end = "5-APR-2020"
 include_fx = true
