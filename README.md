@@ -38,6 +38,7 @@ To set up:
    3. Financial Instrument Information
    4. Statement of Funds - Options: Summarize Trades by Symbol (buy/sell) and Report Date, Currency Breakout
    5. Trades - Options: Orders
+   6. You also need to enable "include fx rates"
 2. Download the flex query for each year in xml format using web browser or the xml downloader in this repository
 3. (Optional) Create an init.toml file with settings and initial section104 pool. Sample is shown in the init_sample.toml file.
 4. Put your xml statements in the same folder
