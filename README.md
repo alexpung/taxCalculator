@@ -2,6 +2,7 @@
 [![codecov](https://codecov.io/gh/alexpung/taxCalculator/branch/development/graph/badge.svg?token=O5UGER8FEJ)](https://codecov.io/gh/alexpung/taxCalculator)
 
 # taxCalculator
+This repo is deprecated and no longer maintained. Successor for this tool is at [alexpung/taxCalculator](https://github.com/alexpung/UK-Investment-tax-calculator)
 
 UK tax calculator for Interactive Broker
 
